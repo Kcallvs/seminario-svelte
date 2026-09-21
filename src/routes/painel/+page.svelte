@@ -26,7 +26,7 @@
 		direto para <code>/login</code>.
 	</p>
 
-	<button on:click={buscar} disabled={carregando}>
+	<button onclick={buscar} disabled={carregando}>
 		{carregando ? "Carregando..." : "Atualizar pedidos"}
 	</button>
 
