@@ -1,3 +1,7 @@
+<script>
+    import Link from "$lib/componets/Link.svelte";
+
+</script>
 <main>
 	<h1>Demo: Svelte + SvelteKit</h1>
 	<p>
@@ -6,11 +10,14 @@
 		comunicação via HTTPS em ação.
 	</p>
 
-	<nav>
-		<a href="/login">1. Fazer login</a>
-		<a href="/painel">2. Painel (protegido pelo middleware)</a>
-		<a href="/sobre">3. Sobre a segurança (HTTPS)</a>
-	</nav>
+	<div class="Box">
+		<nav>
+			<Link ref="/login" name="1. Fazer login" />
+			<Link ref="/painel" name="2. Painel (protegido pelo middleware)" />
+			<Link ref="/sobre" name="3. Sobre a segurança (HTTPS)" />
+		</nav>
+	</div>
+
 </main>
 
 <style>
@@ -20,21 +27,21 @@
 		font-family: system-ui, sans-serif;
 		padding: 0 1rem;
 	}
+
+	.Box{
+		background-color: rgb(255, 255, 255);
+		padding: 2rem;
+		border-radius: 0.25rem;
+		display: flex;
+		justify-content: center;
+		box-shadow:0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+	}
+
 	nav {
 		display: flex;
 		flex-direction: column;
 		gap: 0.75rem;
 		margin-top: 1.5rem;
 	}
-	nav a {
-		background: #ff3e00;
-		color: white;
-		text-decoration: none;
-		padding: 0.7rem 1.2rem;
-		border-radius: 6px;
-		font-weight: 600;
-	}
-	nav a:hover {
-		background: #d93500;
-	}
+
 </style>
