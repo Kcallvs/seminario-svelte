@@ -1,47 +1,69 @@
 <script>
-    import Link from "$lib/componets/Link.svelte";
+    import Card from "$lib/componets/Card.svelte";
+	import Link from "$lib/componets/Link.svelte";
+	import favicon from "$lib/assets/favicon.svg";
+	let name = $state('login');
+	
+	function change_name(name_get){
+		
+		if(name_get!==null){
+			name = name_get;
+		}
+
+	}
 
 </script>
+
+<nav>
+	<img src={favicon} alt="Logo do Svelte" />
+	<Link ref="/login" name="login" hover_func={change_name} />
+	<Link ref="/painel" name="Painel" hover_func={change_name} />
+	<Link ref="/sobre" name="Sobre" hover_func={change_name} />
+</nav>
+
 <main>
-	<h1>Demo: Svelte + SvelteKit</h1>
-	<p>
-		Projeto de exemplo para o seminário. Navegue pelas telas abaixo para ver
-		o componente reativo, o login, o middleware protegendo uma rota e a
-		comunicação via HTTPS em ação.
-	</p>
-
-	<div class="Box">
-		<nav>
-			<Link ref="/login" name="1. Fazer login" />
-			<Link ref="/painel" name="2. Painel (protegido pelo middleware)" />
-			<Link ref="/sobre" name="3. Sobre a segurança (HTTPS)" />
-		</nav>
-	</div>
-
+	<Card main={name} sub_text="..." />
 </main>
 
 <style>
-	main {
-		max-width: 640px;
-		margin: 2rem auto;
+	:global(html, body) {
+		margin: 0;
+		padding: 0;
+		box-sizing: border-box;
 		font-family: system-ui, sans-serif;
-		padding: 0 1rem;
 	}
 
-	.Box{
-		background-color: rgb(255, 255, 255);
-		padding: 2rem;
-		border-radius: 0.25rem;
+	nav img{
+		width: 4rem;
+		height: 4rem;
+	}
+
+	main{
 		display: flex;
 		justify-content: center;
-		box-shadow:0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.2);
+		align-items: center;
+		width: 100%;
+
+		height: 50rem;
+		background: rgb(13, 17, 23);
+		
+
 	}
 
 	nav {
+	
+		height: 5rem;
 		display: flex;
-		flex-direction: column;
+		justify-content: space-evenly;
+		align-items: center;
 		gap: 0.75rem;
-		margin-top: 1.5rem;
+		background:rgb(13, 17, 23);
+		
+		border-bottom: 0.5rem solid var( --orange_svelte);
+
+		
 	}
+
+	
 
 </style>

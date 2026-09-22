@@ -1,25 +1,31 @@
 
 <script>
-    let {ref,name} = $props();
+    let {ref,name,hover_func} = $props();
+	import '$lib/styles/theme.css';
 </script>
 
 
-<a href={ref}>{name}</a>
+<a onmouseenter={()=> hover_func?.(name)} onmouseleave={()=> hover_func?.(null)} href={ref}>
+	<h2>{name}</h2>
+</a>
 
 <style>
+	
     a {
-		background: #ff3e00;
-		color: white;
+		color: gray;
 		text-decoration: none;
-		padding: 0.7rem 5rem;
-		border-radius: 0.25rem;
-		font-weight: 600;
-		box-shadow:
-    0 20px 25px -5px rgba(0, 0, 0, 0.2), /* 20% opacity */
-    0 8px 10px -6px rgba(0, 0, 0, 0.2);
+		border-radius: 2rem;
+		width: 5rem;
+		height: 2rem;
+		display: flex;
+		justify-content: center;
+		align-items: center;
+		transition: all 0.5s;
+	
 	}
 
 	a:hover {
-		background: #d93500;
+		color: var( --orange_svelte);
+		transition: all 0.5s;
 	}
 </style>
