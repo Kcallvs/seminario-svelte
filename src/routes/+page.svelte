@@ -1,5 +1,8 @@
 <script>
 	import NavBar from "$lib/componets/Nav_bar.svelte";
+
+	
+
 </script>
 
 	<NavBar/>
@@ -32,11 +35,9 @@
 			sans-serif;
 	}
 
-	:global(body) {
-		background: rgb(13, 17, 23);
-	}
 
 	main {
+		background: rgb(13, 17, 23);
 		min-height: calc(100vh - 3.5rem);
 		display: flex;
 		justify-content: center;

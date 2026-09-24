@@ -1,4 +1,5 @@
 <script>
+	import NavBar from "$lib/componets/Nav_bar.svelte";
 	let pedidos = $state([]);
 	let carregando = $state(false);
 	let erro = $state("");
@@ -17,6 +18,8 @@
 		}
 	}
 </script>
+
+<NavBar/>
 
 <main>
 	<h1>Painel de pedidos</h1>

@@ -1,31 +1,32 @@
-
 <script>
-    let {ref,name,hover_func} = $props();
-	import '$lib/styles/theme.css';
+	let { ref, name } = $props();
+	import "$lib/styles/theme.css";
 </script>
 
-
-<a onmouseenter={()=> hover_func?.(name)} onmouseleave={()=> hover_func?.(null)} href={ref}>
-	<h2>{name}</h2>
-</a>
+<a href={ref}>{name}</a>
 
 <style>
-	
-    a {
+	a {
+		font-family:
+			system-ui,
+			-apple-system,
+			BlinkMacSystemFont,
+			"Segoe UI",
+			Roboto,
+			"Helvetica Neue",
+			Arial,
+			"Noto Sans",
+			sans-serif;
+
 		color: gray;
+		color: rgba(255, 255, 255, 0.75);
 		text-decoration: none;
-		border-radius: 2rem;
-		width: 5rem;
-		height: 2rem;
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		transition: all 0.5s;
-	
+		font-size: 0.9rem;
+		font-weight: 500;
 	}
 
 	a:hover {
-		color: var( --orange_svelte);
+		color: var(--orange_svelte);
 		transition: all 0.5s;
 	}
 </style>

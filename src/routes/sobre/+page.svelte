@@ -1,4 +1,5 @@
 <script>
+	import NavBar from "$lib/componets/Nav_bar.svelte";
 	let { data } = $props();
 	let cabecalho = $state("");
 
@@ -8,11 +9,13 @@
 	}
 </script>
 
+<NavBar/>
+
 <main>
 	<h1>Sobre HTTPS e middleware</h1>
 	<p>{data.explicacao}</p>
 
-	<button on:click={verificar}>Verificar cabeçalho da resposta</button>
+	<button onclick={verificar}>Verificar cabeçalho da resposta</button>
 
 	{#if cabecalho}
 		<pre>Strict-Transport-Security: {cabecalho}</pre>

@@ -1,7 +1,14 @@
 <script>
+
+	import NavBar from "$lib/componets/Nav_bar.svelte";
+
 	/** @type {{ form: import('./$types').ActionData }} */
 	let { form } = $props();
 </script>
+
+
+<NavBar/>
+
 
 <main>
 	<h1>Login</h1>

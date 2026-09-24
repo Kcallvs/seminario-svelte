@@ -1,5 +1,6 @@
 <script>
 	import favicon from "$lib/assets/favicon.svg";
+	import Link from "./Link.svelte";
 </script>
 
 <nav>
@@ -7,15 +8,31 @@
 		<img src={favicon} alt="Logo" class="logo" />
 		<span class="brand">SISTEMA</span>
 		<div class="nav-links">
-			<a href="/login">Login</a>
-			<a href="/painel">Painel</a>
-			<a href="/sobre">Sobre</a>
+			<Link name='Login' ref="/login"/>
+			<Link name='Painel' ref="/painel"/>
+		 	<Link name='Sobre' ref="/sobre"/>
 		</div>
 	</div>
 </nav>
 
 <style>
-	
+	:global(html, body) {
+		margin: 0;
+		padding: 0;
+		height: 100%;
+		font-family:
+			system-ui,
+			-apple-system,
+			BlinkMacSystemFont,
+			"Segoe UI",
+			Roboto,
+			"Helvetica Neue",
+			Arial,
+			"Noto Sans",
+			sans-serif;
+	}
+
+
 	nav {
 		height: 3.5rem;
 		flex-shrink: 0;
@@ -61,5 +78,4 @@
 	.nav-links a:hover {
 		color: #fff;
 	}
-
 </style>
