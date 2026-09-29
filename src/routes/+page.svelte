@@ -1,8 +1,5 @@
 <script>
 	import NavBar from "$lib/componets/Nav_bar.svelte";
-
-	
-
 </script>
 
 	<NavBar/>

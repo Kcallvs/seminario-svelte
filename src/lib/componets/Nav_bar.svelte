@@ -1,17 +1,28 @@
 <script>
 	import favicon from "$lib/assets/favicon.svg";
+	import dark from "$lib/assets/dark-mode.svg";
 	import Link from "./Link.svelte";
-</script>
 
-<nav>
+	
+
+	function change_theme() {}
+</script>
+<!-- <nav style:background={s}></nav> -->
+<nav >
 	<div class="nav-left">
 		<img src={favicon} alt="Logo" class="logo" />
 		<span class="brand">SISTEMA</span>
 		<div class="nav-links">
-			<Link name='Login' ref="/login"/>
-			<Link name='Painel' ref="/painel"/>
-		 	<Link name='Sobre' ref="/sobre"/>
+			<Link name="Login" ref="/login" />
+			<Link name="Painel" ref="/painel" />
+			<Link name="Sobre" ref="/sobre" />
 		</div>
+	</div>
+
+	<div class="nav-right">
+		<button onclick={change_theme}>
+			<img src={dark} alt="dark" class="logo dark" />
+		</button>
 	</div>
 </nav>
 
@@ -31,13 +42,20 @@
 			"Noto Sans",
 			sans-serif;
 	}
-
+	button {
+		background: none;
+		border: none;
+		padding: 0;
+		cursor: pointer;
+		display: flex;
+	}
 
 	nav {
 		height: 3.5rem;
 		flex-shrink: 0;
 		display: flex;
 		align-items: center;
+		justify-content: space-between;
 		padding: 0 1.5rem;
 		background: rgb(13, 17, 23);
 		border-bottom: 1px solid rgba(255, 255, 255, 0.08);
@@ -49,9 +67,19 @@
 		gap: 1.75rem;
 	}
 
+	.nav-right {
+		margin-left: auto;
+		display: flex;
+		align-items: center;
+	}
+
 	.logo {
 		width: 1.75rem;
 		height: 1.75rem;
+	}
+
+	img.dark {
+		filter: invert(1);
 	}
 
 	.brand {
@@ -66,16 +94,5 @@
 		display: flex;
 		align-items: center;
 		gap: 1.5rem;
-	}
-
-	.nav-links a {
-		color: rgba(255, 255, 255, 0.75);
-		text-decoration: none;
-		font-size: 0.9rem;
-		font-weight: 500;
-	}
-
-	.nav-links a:hover {
-		color: #fff;
 	}
 </style>
