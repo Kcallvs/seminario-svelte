@@ -2,13 +2,24 @@
 	import favicon from "$lib/assets/favicon.svg";
 	import dark from "$lib/assets/dark-mode.svg";
 	import Link from "./Link.svelte";
+	import { onMount } from "svelte";
 
-	
+	let active = $state(false);
 
-	function change_theme() {}
+	onMount(() => {
+		active = document.documentElement.dataset.theme === "dark";
+	});
+
+	function change_theme() {
+		active = !active;
+		const tema = active ? "dark" : "light";
+		document.documentElement.dataset.theme = tema;
+		localStorage.setItem("tema", tema);
+	}
 </script>
+
 <!-- <nav style:background={s}></nav> -->
-<nav >
+<nav>
 	<div class="nav-left">
 		<img src={favicon} alt="Logo" class="logo" />
 		<span class="brand">SISTEMA</span>
@@ -21,7 +32,7 @@
 
 	<div class="nav-right">
 		<button onclick={change_theme}>
-			<img src={dark} alt="dark" class="logo dark" />
+			<img src={dark} alt="dark" class="logo" class:dark={active} />
 		</button>
 	</div>
 </nav>
@@ -57,8 +68,8 @@
 		align-items: center;
 		justify-content: space-between;
 		padding: 0 1.5rem;
-		background: rgb(13, 17, 23);
-		border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+		background: var(--bg);
+		border-bottom: 1px solid var(--border);
 	}
 
 	.nav-left {
@@ -78,12 +89,12 @@
 		height: 1.75rem;
 	}
 
-	img.dark {
+	.dark {
 		filter: invert(1);
 	}
 
 	.brand {
-		color: #fff;
+		color: var(--text-color);
 		font-weight: 700;
 		font-size: 0.9rem;
 		letter-spacing: 0.05em;

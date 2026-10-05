@@ -34,7 +34,7 @@
 
 
 	main {
-		background: rgb(13, 17, 23);
+		background: var(--bg);
 		min-height: calc(100vh - 3.5rem);
 		display: flex;
 		justify-content: center;
@@ -52,12 +52,12 @@
 	.box h1 {
 		font-size: 2.25rem;
 		margin: 0 0 0.75rem;
-		color: #fff;
+		color: var(--text-color);
 	}
 
 	main p {
 		max-width: 40rem;
-		color: rgba(255, 255, 255, 0.6);
+		color: var(--sub-text);
 		line-height: 1.6;
 		margin: 0 0 2rem;
 	}
@@ -66,7 +66,7 @@
 		display: inline-block;
 		padding: 0.75rem 2rem;
 		background: var(--orange_svelte, #ff4500);
-		color: #fff;
+		color: white;
 		text-decoration: none;
 		border-radius: 8px;
 		font-weight: 600;

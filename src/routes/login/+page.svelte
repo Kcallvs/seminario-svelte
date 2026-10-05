@@ -1,41 +1,60 @@
 <script>
+  import NavBar from "$lib/componets/Nav_bar.svelte";
 
-	import NavBar from "$lib/componets/Nav_bar.svelte";
-
-	/** @type {{ form: import('./$types').ActionData }} */
-	let { form } = $props();
+  /** @type {{ form: import('./$types').ActionData }} */
+  let { form } = $props();
 </script>
 
 <svelte:head>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
-  <link href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;700&display=swap" rel="stylesheet" />
+  <link
+    rel="preconnect"
+    href="https://fonts.gstatic.com"
+    crossorigin="anonymous"
+  />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fira+Sans:wght@400;700&display=swap"
+    rel="stylesheet"
+  />
 </svelte:head>
 
-<NavBar/>
+<NavBar />
 <div class="pagina">
   <div class="esquerda"></div>
 
   <div class="direita">
     <div class="conteudo">
-
       <h1>Bem-vindo de volta</h1>
-      <p class="subtitulo">Entre com sua conta para ver suas tarefas de hoje.</p>
+      <p class="subtitulo">
+        Entre com sua conta para ver suas tarefas de hoje.
+      </p>
 
       {#if form?.erro}
         <p class="erro">{form.erro}</p>
       {/if}
 
-      <form method="POST" action="?/entrar">
-        <label for="nome">Usuário</label>
-        <input id="nome" name="nome" value={form?.nome ?? ''} required placeholder="Use: admin"/>
+      <form method="POST">
+        <label for="usuario">Usuário</label>
+        <input
+          id="usuario"
+          name="usuario"
+          autocomplete="username"
+          value={form?.usuario ?? ""}
+          required
+          placeholder="Use: admin"
+        />
 
         <label for="senha">Senha</label>
         <div class="campo-senha">
-          <input id="senha" name="senha" type="password" required placeholder="Use: 1234" />
-     
+          <input
+            id="senha"
+            name="senha"
+            type="password"
+            autocomplete="current-password"
+            required
+            placeholder="Use: 1234"
+          />
         </div>
-
 
         <button type="submit" class="entrar">Entrar</button>
       </form>
@@ -47,7 +66,7 @@
   .pagina {
     display: flex;
     min-height: 100vh;
-    font-family: 'Fira Sans', sans-serif;
+    font-family: "Fira Sans", sans-serif;
   }
 
   .esquerda {
@@ -57,7 +76,7 @@
 
   .direita {
     flex: 1;
-    background: #fff;
+    background: var(--bg);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -80,6 +99,10 @@
     color: #6b6480;
   }
 
+  .erro {
+    color: #b00020;
+  }
+
   label {
     display: block;
     margin: 1rem 0 0.4rem;
@@ -88,7 +111,7 @@
   }
 
   input:not([type]),
-  input[type='password'] {
+  input[type="password"] {
     width: 100%;
     box-sizing: border-box;
     padding: 0.9rem 1rem;
@@ -108,7 +131,7 @@
   .entrar {
     width: 100%;
     padding: 0.9rem;
-	margin-top: 1.5rem;
+    margin-top: 1.5rem;
     background: #ff3e00;
     color: #fff;
     border: none;
