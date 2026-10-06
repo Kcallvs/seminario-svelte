@@ -38,7 +38,7 @@
 		padding: 0 1rem;
 	}
 	button {
-		background: #ff3e00;
+		background: var( --orange_svelte);
 		color: white;
 		border: none;
 		border-radius: 6px;
@@ -48,14 +48,14 @@
 		margin: 1rem 0;
 	}
 	pre {
-		background: #1a1a1e;
-		color: #40b3a2;
+		background: var(--surface);
+		color: var(--selo-feito-text);
 		padding: 0.8rem 1rem;
 		border-radius: 6px;
 		overflow-x: auto;
 	}
 	.nota {
 		font-size: 0.85rem;
-		color: #666;
+		color: var(--text-color);
 	}
 </style>

@@ -71,12 +71,12 @@
 
   .esquerda {
     flex: 1;
-    background: #ff3e00;
+    background: var( --orange_svelte);
   }
 
   .direita {
     flex: 1;
-    background: var(--bg);
+    background: var( --surface);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -91,23 +91,23 @@
   h1 {
     margin: 0 0 0.5rem;
     font-size: 2rem;
-    color: #1f1233;
+    color: var(--label-text);
   }
 
   .subtitulo {
     margin: 0 0 1.5rem;
-    color: #6b6480;
+    color: var(--text-bold);
   }
 
   .erro {
-    color: #b00020;
+    color: var(--err);
   }
 
   label {
     display: block;
     margin: 1rem 0 0.4rem;
     font-weight: bold;
-    color: #3b2f5c;
+    color: var( --label-text);
   }
 
   input:not([type]),

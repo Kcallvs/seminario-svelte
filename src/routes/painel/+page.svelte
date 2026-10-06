@@ -9,7 +9,7 @@
 	let pendentes = $derived(total - concluidas);
 </script>
 
-<NavBar/>
+<NavBar />
 
 <main>
 	<header class="topo">
@@ -21,7 +21,7 @@
 		<div class="acoes">
 			<a href="/painel/nova" class="botao">Nova tarefa</a>
 			<form method="POST" action="/painel?/sair">
-				<button type="submit" class="sair">Sair</button>
+				<button type="submit" class="botao secundario">Sair</button>
 			</form>
 		</div>
 	</header>
@@ -85,16 +85,16 @@
 
 	<a href="/" class="voltar">← Voltar</a>
 </main>
-
 <style>
 	main {
 		max-width: 1000px;
 		margin: 2rem auto;
-		font-family: system-ui, sans-serif;
 		padding: 0 1rem;
-		color: #222;
+		font-family: system-ui, sans-serif;
+		color: var(--text-color);
 	}
 
+	/* ---------- Cabeçalho ---------- */
 	.topo {
 		display: flex;
 		justify-content: space-between;
@@ -107,11 +107,12 @@
 	h1 {
 		margin: 0;
 		font-size: 1.8rem;
+		color: var(--text-bold);
 	}
 
 	.subtitulo {
 		margin: 0.3rem 0 0;
-		color: #6b6b6b;
+		color: var(--subtitulo);
 	}
 
 	.acoes {
@@ -120,30 +121,45 @@
 		align-items: center;
 	}
 
+	/* ---------- Botões ---------- */
+	.botao {
+		background: var(--accent);
+		color: var(--accent-contrast);
+		border: none;
+		border-radius: 6px;
+		padding: 0.6rem 1.2rem;
+		font-family: inherit;
+		font-size: 1rem;
+		cursor: pointer;
+		text-decoration: none;
+		transition: filter 0.15s;
+	}
+
+	.botao:hover {
+		filter: brightness(1.1);
+	}
+
+	.botao.secundario {
+		background: var(--btn-secondary);
+		color: var(--accent-contrast);
+	}
+
+	/* ---------- Aviso ---------- */
 	.aviso {
-		background: #fff4e5;
-		border-left: 4px solid #ff3e00;
+		background: var(--aviso-bg);
+		border-left: 4px solid var(--accent);
 		padding: 0.7rem 1rem;
 		font-size: 0.9rem;
 		border-radius: 0 6px 6px 0;
 	}
 
-	button,
-	.botao {
-		background: #ff3e00;
-		color: white;
-		border: none;
-		border-radius: 6px;
-		padding: 0.6rem 1.2rem;
-		font-size: 1rem;
-		cursor: pointer;
-		text-decoration: none;
+	.aviso code {
+		background: var(--border);
+		padding: 0.1rem 0.35rem;
+		border-radius: 4px;
 	}
 
-	button.sair {
-		background: #444;
-	}
-
+	/* ---------- Cards de resumo ---------- */
 	.cards {
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -152,18 +168,20 @@
 	}
 
 	.card {
-		background: #fff;
-		border-radius: 10px;
-		padding: 1.2rem;
-		box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
 		display: flex;
 		flex-direction: column;
 		gap: 0.4rem;
+		padding: 1.2rem;
+		background: var(--surface);
+		border: 1px solid var(--border);
+		border-radius: 10px;
+		box-shadow: var(--shadow);
 	}
 
 	.card.destaque {
-		background: #ff3e00;
-		color: #fff;
+		background: var(--accent);
+		border-color: transparent;
+		color: var(--accent-contrast);
 	}
 
 	.card-titulo {
@@ -175,10 +193,12 @@
 		font-size: 2rem;
 	}
 
+	/* ---------- Tabela ---------- */
 	.tabela-caixa {
-		background: #fff;
+		background: var(--surface);
+		border: 1px solid var(--border);
 		border-radius: 10px;
-		box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+		box-shadow: var(--shadow);
 		overflow: hidden;
 	}
 
@@ -187,16 +207,17 @@
 		justify-content: space-between;
 		align-items: center;
 		padding: 1rem 1.2rem;
-		border-bottom: 1px solid #eee;
+		border-bottom: 1px solid var(--border);
 	}
 
 	.tabela-topo h2 {
 		margin: 0;
 		font-size: 1.1rem;
+		color: var(--text-bold);
 	}
 
 	.contador {
-		color: #6b6b6b;
+		color: var(--text-muted);
 		font-size: 0.9rem;
 	}
 
@@ -215,52 +236,54 @@
 		font-size: 0.8rem;
 		text-transform: uppercase;
 		letter-spacing: 0.04em;
-		color: #6b6b6b;
-		background: #fafafa;
+		color: var(--text-muted);
+		background: var(--surface-alt);
 	}
 
 	tbody tr {
-		border-top: 1px solid #eee;
+		border-top: 1px solid var(--border);
 	}
 
 	tbody tr:hover {
-		background: #fff8f5;
+		background: var(--surface-hover);
 	}
 
 	.link-tarefa {
-		color: #222;
+		color: var(--text-color);
 		text-decoration: none;
 		font-weight: 500;
 	}
 
 	.link-tarefa:hover {
-		color: #ff3e00;
+		color: var(--accent);
 	}
 
+	.vazio {
+		text-align: center;
+		color: var(--text-muted);
+		padding: 2rem 1rem;
+	}
+
+	/* ---------- Selos de status ---------- */
 	.selo {
 		display: inline-block;
-		background: #fff4e5;
-		color: #c2410c;
+		background: var(--selo-bg);
+		color: var(--selo-text);
 		border-radius: 999px;
 		padding: 0.2rem 0.7rem;
 		font-size: 0.85rem;
 	}
 
 	.selo.feito {
-		background: #e6f4ea;
-		color: #1e7e34;
+		background: var(--selo-feito-bg);
+		color: var(--selo-feito-text);
 	}
 
-	.vazio {
-		text-align: center;
-		color: #6b6b6b;
-		padding: 2rem 1rem;
-	}
-
+	/* ---------- Rodapé ---------- */
 	.voltar {
 		display: inline-block;
 		margin-top: 1.5rem;
-		color: #ff3e00;
+		color: var(--accent);
 		text-decoration: none;
 	}
 </style>
