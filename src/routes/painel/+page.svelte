@@ -1,12 +1,17 @@
 <script>
-	
-
 	/** @type {{ data: import('./$types').PageData }} */
 	let { data } = $props();
 
 	let total = $derived(data.tarefas.length);
 	let concluidas = $derived(data.tarefas.filter((t) => t.concluida).length);
 	let pendentes = $derived(total - concluidas);
+
+	/** @param {SubmitEvent} e */
+	function confirmar(e) {
+		if (!confirm("Deseja realmente deletar esta tarefa?")) {
+			e.preventDefault();
+		}
+	}
 </script>
 
 <main>
@@ -58,6 +63,7 @@
 				<tr>
 					<th>Tarefa</th>
 					<th>Status</th>
+					<th class="col-acoes">Ações</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -69,10 +75,19 @@
 								{t.concluida ? "Concluída" : "Pendente"}
 							</span>
 						</td>
+						<td class="col-acoes">
+							<div class="celula-acoes">
+								<a href="/painel/nova?editar={t.id}" class="botao secundario pequeno">Editar</a>
+								<form method="POST" action="/painel?/deletar" onsubmit={confirmar}>
+									<input type="hidden" name="id" value={t.id} />
+									<button type="submit" class="botao perigo pequeno">Deletar</button>
+								</form>
+							</div>
+						</td>
 					</tr>
 				{:else}
 					<tr>
-						<td colspan="2" class="vazio">
+						<td colspan="3" class="vazio">
 							Nenhuma tarefa ainda. Clique em "Nova tarefa" para criar a primeira.
 						</td>
 					</tr>
@@ -83,6 +98,7 @@
 
 	<a href="/" class="voltar">← Voltar</a>
 </main>
+
 <style>
 	main {
 		max-width: 1000px;
@@ -121,6 +137,7 @@
 
 	/* ---------- Botões ---------- */
 	.botao {
+		display: inline-block;
 		background: var(--accent);
 		color: var(--accent-contrast);
 		border: none;
@@ -140,6 +157,16 @@
 	.botao.secundario {
 		background: var(--btn-secondary);
 		color: var(--accent-contrast);
+	}
+
+	.botao.perigo {
+		background: var(--err);
+		color: #fff;
+	}
+
+	.botao.pequeno {
+		padding: 0.35rem 0.8rem;
+		font-size: 0.85rem;
 	}
 
 	/* ---------- Aviso ---------- */
@@ -236,6 +263,19 @@
 		letter-spacing: 0.04em;
 		color: var(--text-muted);
 		background: var(--surface-alt);
+	}
+
+	.col-acoes {
+		text-align: right;
+		width: 1%;
+		white-space: nowrap;
+	}
+
+	.celula-acoes {
+		display: flex;
+		gap: 0.5rem;
+		justify-content: flex-end;
+		align-items: center;
 	}
 
 	tbody tr {

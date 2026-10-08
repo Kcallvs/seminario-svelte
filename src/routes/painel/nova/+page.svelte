@@ -1,20 +1,26 @@
 <script>
 	import { enhance } from "$app/forms";
-	
 
-	/** @type {{ form: import('./$types').ActionData }} */
-	let { form } = $props();
+	/** @type {{ data: import('./$types').PageData, form: import('./$types').ActionData }} */
+	let { data, form } = $props();
 
-
-    /**@type {boolean}*/
+	/** @type {boolean} */
 	let enviando = $state(false);
+
+	let editando = $derived(data.tarefa !== null);
+	let titulo = $derived(form?.titulo ?? data.tarefa?.titulo ?? "");
+	let concluida = $derived(form ? form.concluida : (data.tarefa?.concluida ?? false));
 </script>
 
 <main>
 	<header class="topo">
 		<div>
-			<h1>Nova tarefa</h1>
-			<p class="subtitulo">Preencha os dados para criar uma tarefa.</p>
+			<h1>{editando ? "Editar tarefa" : "Nova tarefa"}</h1>
+			<p class="subtitulo">
+				{editando
+					? "Altere os dados e salve."
+					: "Preencha os dados para criar uma tarefa."}
+			</p>
 		</div>
 	</header>
 
@@ -24,7 +30,7 @@
 			use:enhance={() => {
 				enviando = true;
 				return async ({ update }) => {
-					await update();
+					await update({ reset: false });
 					enviando = false;
 				};
 			}}
@@ -33,24 +39,32 @@
 				<p class="erro">{form.erro}</p>
 			{/if}
 
+			{#if editando}
+				<input type="hidden" name="id" value={data.tarefa.id} />
+			{/if}
+
 			<label for="titulo">Título</label>
 			<input
 				id="titulo"
 				name="titulo"
 				type="text"
-				value={form?.titulo ?? ""}
+				value={titulo}
 				placeholder="Ex: Estudar para a prova"
 				required
 			/>
 
 			<label class="check">
-				<input type="checkbox" name="concluida" />
+				<input type="checkbox" name="concluida" checked={concluida} />
 				Já está concluída
 			</label>
 
 			<div class="acoes">
 				<button type="submit" disabled={enviando}>
-					{enviando ? "Salvando..." : "Criar tarefa"}
+					{#if enviando}
+						Salvando...
+					{:else}
+						{editando ? "Salvar alterações" : "Criar tarefa"}
+					{/if}
 				</button>
 				<a href="/painel" class="cancelar">Cancelar</a>
 			</div>
