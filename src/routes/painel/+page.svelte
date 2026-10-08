@@ -1,5 +1,5 @@
 <script>
-	import NavBar from "$lib/componets/Nav_bar.svelte";
+	
 
 	/** @type {{ data: import('./$types').PageData }} */
 	let { data } = $props();
@@ -8,8 +8,6 @@
 	let concluidas = $derived(data.tarefas.filter((t) => t.concluida).length);
 	let pendentes = $derived(total - concluidas);
 </script>
-
-<NavBar />
 
 <main>
 	<header class="topo">

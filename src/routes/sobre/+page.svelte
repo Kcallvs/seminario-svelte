@@ -1,5 +1,5 @@
 <script>
-	import NavBar from "$lib/componets/Nav_bar.svelte";
+	
 	let { data } = $props();
 	let cabecalho = $state("");
 
@@ -8,8 +8,6 @@
 		cabecalho = res.headers.get("strict-transport-security") ?? "(não encontrado)";
 	}
 </script>
-
-<NavBar/>
 
 <main>
 	<h1>Sobre HTTPS e middleware</h1>

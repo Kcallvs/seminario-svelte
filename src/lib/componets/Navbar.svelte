@@ -4,6 +4,8 @@
 	import Link from "./Link.svelte";
 	import { onMount } from "svelte";
 
+	let { is_login=false } = $props();
+
 	let active = $state(false);
 
 	onMount(() => {
@@ -24,7 +26,10 @@
 		<img src={favicon} alt="Logo" class="logo" />
 		<span class="brand">SISTEMA</span>
 		<div class="nav-links">
-			<Link name="Login" ref="/login" />
+			{#if !is_login}
+				<Link name="Login" ref="/login" />
+			{/if}
+
 			<Link name="Painel" ref="/painel" />
 			<Link name="Sobre" ref="/sobre" />
 		</div>

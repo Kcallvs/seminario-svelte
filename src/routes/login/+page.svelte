@@ -1,5 +1,5 @@
 <script>
-  import NavBar from "$lib/componets/Nav_bar.svelte";
+ 
 
   /** @type {{ form: import('./$types').ActionData }} */
   let { form } = $props();
@@ -18,7 +18,6 @@
   />
 </svelte:head>
 
-<NavBar />
 <div class="pagina">
   <div class="esquerda"></div>
 

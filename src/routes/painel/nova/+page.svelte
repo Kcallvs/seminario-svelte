@@ -1,6 +1,6 @@
 <script>
 	import { enhance } from "$app/forms";
-	import NavBar from "$lib/componets/Nav_bar.svelte";
+	
 
 	/** @type {{ form: import('./$types').ActionData }} */
 	let { form } = $props();
@@ -9,8 +9,6 @@
     /**@type {boolean}*/
 	let enviando = $state(false);
 </script>
-
-<NavBar />
 
 <main>
 	<header class="topo">
@@ -61,14 +59,13 @@
 
 	<a href="/painel" class="voltar">← Voltar</a>
 </main>
-
 <style>
 	main {
 		max-width: 600px;
 		margin: 2rem auto;
-		font-family: system-ui, sans-serif;
 		padding: 0 1rem;
-		color: #222;
+		font-family: system-ui, sans-serif;
+		color: var(--text-color);
 	}
 
 	.topo {
@@ -78,17 +75,19 @@
 	h1 {
 		margin: 0;
 		font-size: 1.8rem;
+		color: var(--text-bold);
 	}
 
 	.subtitulo {
 		margin: 0.3rem 0 0;
-		color: #6b6b6b;
+		color: var(--subtitulo);
 	}
 
 	.caixa {
-		background: #fff;
+		background: var(--surface);
+		border: 1px solid var(--border);
 		border-radius: 10px;
-		box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+		box-shadow: var(--shadow);
 		padding: 1.5rem;
 	}
 
@@ -101,18 +100,27 @@
 	label {
 		font-size: 0.9rem;
 		font-weight: 500;
+		color: var(--text-color);
 	}
 
 	input[type="text"] {
 		padding: 0.6rem 0.8rem;
+		font-family: inherit;
 		font-size: 1rem;
-		border: 1px solid #ddd;
+		color: var(--text-color);
+		background: var(--surface-alt);
+		border: 1px solid var(--border);
 		border-radius: 6px;
+	}
+
+	input[type="text"]::placeholder {
+		color: var(--text-muted);
+		opacity: 0.7;
 	}
 
 	input[type="text"]:focus {
 		outline: none;
-		border-color: #ff3e00;
+		border-color: var(--accent);
 	}
 
 	.check {
@@ -122,10 +130,14 @@
 		font-weight: 400;
 	}
 
+	.check input {
+		accent-color: var(--accent);
+	}
+
 	.erro {
-		background: #fdecea;
-		border-left: 4px solid #c62828;
-		color: #c62828;
+		background: var(--aviso-bg);
+		border-left: 4px solid var(--err);
+		color: var(--err);
 		padding: 0.6rem 1rem;
 		font-size: 0.9rem;
 		border-radius: 0 6px 6px 0;
@@ -140,13 +152,19 @@
 	}
 
 	button {
-		background: #ff3e00;
-		color: white;
+		background: var(--accent);
+		color: var(--accent-contrast);
 		border: none;
 		border-radius: 6px;
 		padding: 0.6rem 1.2rem;
+		font-family: inherit;
 		font-size: 1rem;
 		cursor: pointer;
+		transition: filter 0.15s;
+	}
+
+	button:hover:not(:disabled) {
+		filter: brightness(1.1);
 	}
 
 	button:disabled {
@@ -155,14 +173,14 @@
 	}
 
 	.cancelar {
-		color: #6b6b6b;
+		color: var(--text-muted);
 		text-decoration: none;
 	}
 
 	.voltar {
 		display: inline-block;
 		margin-top: 1.5rem;
-		color: #ff3e00;
+		color: var(--accent);
 		text-decoration: none;
 	}
 </style>
