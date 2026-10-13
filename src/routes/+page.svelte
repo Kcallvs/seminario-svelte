@@ -1,6 +1,10 @@
-
 <main>
 	<div class="box">
+		<img
+			class="hero"
+			src="/imgs/sveltelogo.png"
+			alt="Ilustração do sistema"
+		/>
 		<h1>Bem-vindo ao Sistema</h1>
 		<p>
 			Gerencie tudo em um só lugar. Faça login para acessar seu painel e
@@ -27,7 +31,6 @@
 			sans-serif;
 	}
 
-
 	main {
 		background: var(--bg);
 		min-height: calc(100vh - 3.5rem);
@@ -41,7 +44,14 @@
 		flex-direction: column;
 		align-items: center;
 		text-align: center;
-		padding: 6rem 1.5rem;
+		padding: 3rem 1.5rem;
+	}
+
+	.hero {
+		width: 100%;
+		max-width: 60rem;
+		height: auto;
+		margin-bottom: 2rem;
 	}
 
 	.box h1 {

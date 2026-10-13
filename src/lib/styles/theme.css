@@ -4,7 +4,7 @@
     --dark: rgb(13, 17, 23);
     --bg: #fff;
     --border: rgba(13, 17, 23, 0.08);
-    --label-text:#3b2f5c;
+    --label-text:#000;
 
     --text-color: rgb(13, 17, 23);
     --text-bold: #222;
@@ -42,7 +42,7 @@
     --bg: rgb(13, 17, 23);
     --dark: var(--bg);
     --border: rgba(255, 255, 255, 0.08);
-    --label-text:#636363;
+    --label-text:#fff;
 
     --text-color: #e6edf3;
     --text-bold: #fff;
