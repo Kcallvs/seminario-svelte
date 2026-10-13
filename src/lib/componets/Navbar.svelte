@@ -23,7 +23,7 @@
 <!-- <nav style:background={s}></nav> -->
 <nav>
 	<div class="nav-left">
-		<img src={favicon} alt="Logo" class="logo" />
+		<a href="/"><img src={favicon} alt="Logo" class="logo" /></a>
 		<span class="brand">SISTEMA</span>
 		<div class="nav-links">
 			{#if !is_login}
