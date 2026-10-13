@@ -1,5 +1,7 @@
 <script>
 	import { enhance } from "$app/forms";
+    import ModalTarefa from "$lib/componets/ModalTarefa.svelte";
+	
 	import {
 		PRIORIDADES,
 		PESO,
@@ -12,10 +14,30 @@
 	/** @type {{ data: import('./$types').PageData }} */
 	let { data } = $props();
 
-	let filtro = $state("todas");
 	let prioridadeFiltro = $state("todas");
 	let ordem = $state("criacao");
 	let busca = $state("");
+
+	/** @type {number | string | null} */
+	let arrastando = $state(null);
+	/** @type {string | null} */
+	let sobre = $state(null);
+
+	// Overlay de criar/editar tarefa
+	let modalAberto = $state(false);
+	/** @type {any} */
+	let tarefaEditando = $state(null);
+
+	function abrirNova() {
+		tarefaEditando = null;
+		modalAberto = true;
+	}
+
+	/** @param {any} t */
+	function abrirEditar(t) {
+		tarefaEditando = t;
+		modalAberto = true;
+	}
 
 	let total = $derived(data.tarefas.length);
 	let concluidas = $derived(data.tarefas.filter((t) => t.concluida).length);
@@ -23,22 +45,14 @@
 	let atrasadas = $derived(data.tarefas.filter((t) => situacaoPrazo(t) === "atrasada").length);
 	let progresso = $derived(total ? Math.round((concluidas / total) * 100) : 0);
 
-	let filtros = $derived([
-		{ id: "todas", nome: "Todas", qtd: total },
-		{ id: "pendentes", nome: "Pendentes", qtd: pendentes },
-		{ id: "concluidas", nome: "Concluídas", qtd: concluidas }
-	]);
-
 	let visiveis = $derived.by(() => {
 		const termo = busca.trim().toLowerCase();
 
 		const lista = data.tarefas.filter((t) => {
-			const porStatus =
-				filtro === "todas" || (filtro === "pendentes" ? !t.concluida : t.concluida);
 			const porPrioridade =
 				prioridadeFiltro === "todas" || prioridadeDe(t) === prioridadeFiltro;
 			const porBusca = t.titulo.toLowerCase().includes(termo);
-			return porStatus && porPrioridade && porBusca;
+			return porPrioridade && porBusca;
 		});
 
 		if (ordem === "prazo") {
@@ -53,11 +67,50 @@
 		return lista;
 	});
 
+	// As "listas" do quadro
+	let colunas = $derived([
+		{ id: "pendentes", nome: "Pendentes", feita: false, itens: visiveis.filter((t) => !t.concluida) },
+		{ id: "concluidas", nome: "Concluídas", feita: true, itens: visiveis.filter((t) => t.concluida) }
+	]);
+
 	/** @param {SubmitEvent} e */
 	function confirmar(e) {
 		if (!confirm("Deseja realmente deletar esta tarefa?")) {
 			e.preventDefault();
 		}
+	}
+
+	/**
+	 * @param {DragEvent} e
+	 * @param {number | string} id
+	 */
+	function iniciarArrasto(e, id) {
+		arrastando = id;
+		if (e.dataTransfer) {
+			e.dataTransfer.effectAllowed = "move";
+			e.dataTransfer.setData("text/plain", String(id));
+		}
+	}
+
+	function fimArrasto() {
+		arrastando = null;
+		sobre = null;
+	}
+
+	/**
+	 * Soltar um cartão em outra lista alterna o status dele,
+	 * reaproveitando a action ?/alternar de cada cartão.
+	 * @param {DragEvent} e
+	 * @param {boolean} feita
+	 */
+	function soltar(e, feita) {
+		e.preventDefault();
+		const t = data.tarefas.find((x) => String(x.id) === String(arrastando));
+		fimArrasto();
+		if (!t || Boolean(t.concluida) === feita) return;
+
+		const form = document.getElementById(`alt-${t.id}`);
+		if (form instanceof HTMLFormElement) form.requestSubmit();
 	}
 </script>
 
@@ -65,41 +118,32 @@
 	<header class="topo">
 		<div>
 			<h1>Minhas tarefas</h1>
-			<p class="subtitulo">Acompanhe o que está pendente e o que já foi concluído.</p>
+			<p class="subtitulo">Arraste os cartões entre as listas para mudar o status.</p>
 		</div>
 
 		<div class="acoes">
-			<a href="/painel/nova" class="botao">+ Nova tarefa</a>
+			<a
+				href="/painel/nova"
+				class="botao"
+				onclick={(e) => {
+					e.preventDefault();
+					abrirNova();
+				}}>+ Nova tarefa</a
+			>
 			<form method="POST" action="/painel?/sair">
 				<button type="submit" class="botao secundario">Sair</button>
 			</form>
 		</div>
 	</header>
 
-	<section class="cards">
-		<div class="card destaque">
-			<span class="card-titulo">Total de tarefas</span>
-			<strong class="card-valor">{total}</strong>
-		</div>
+	<!-- Resumo compacto -->
+	<section class="resumo">
+		<span class="chip">{total} no total</span>
+		<span class="chip"><i class="ponto pendente"></i>{pendentes} pendentes</span>
+		<span class="chip"><i class="ponto feito"></i>{concluidas} concluídas</span>
+		<span class="chip" class:alerta={atrasadas > 0}><i class="ponto atraso"></i>{atrasadas} atrasadas</span>
 
-		<div class="card">
-			<span class="card-titulo"><i class="ponto pendente"></i>Pendentes</span>
-			<strong class="card-valor">{pendentes}</strong>
-		</div>
-
-		<div class="card">
-			<span class="card-titulo"><i class="ponto feito"></i>Concluídas</span>
-			<strong class="card-valor">{concluidas}</strong>
-		</div>
-
-		<div class="card">
-			<span class="card-titulo"><i class="ponto atraso"></i>Atrasadas</span>
-			<strong class="card-valor" class:alerta={atrasadas > 0}>{atrasadas}</strong>
-		</div>
-
-		<div class="card">
-			<span class="card-titulo">Progresso</span>
-			<strong class="card-valor">{progresso}%</strong>
+		<div class="progresso">
 			<div
 				class="barra"
 				role="progressbar"
@@ -109,154 +153,174 @@
 			>
 				<div class="barra-preenchida" style="width: {progresso}%"></div>
 			</div>
+			<span>{progresso}%</span>
 		</div>
 	</section>
 
-	<section class="tabela-caixa">
-		<div class="tabela-topo">
-			<div class="titulo-grupo">
-				<h2>Tarefas</h2>
-				<span class="contador">
-					{visiveis.length}
-					{visiveis.length === 1 ? "registro" : "registros"}
-				</span>
-			</div>
+	<!-- Barra de ferramentas do quadro -->
+	<section class="ferramentas">
+		<input
+			type="search"
+			class="campo-ferramenta busca"
+			placeholder="Buscar tarefa..."
+			bind:value={busca}
+			aria-label="Buscar tarefa"
+		/>
 
-			<div class="ferramentas">
-				<input
-					type="search"
-					class="campo-ferramenta busca"
-					placeholder="Buscar tarefa..."
-					bind:value={busca}
-					aria-label="Buscar tarefa"
-				/>
-
-				<select
-					class="campo-ferramenta"
-					bind:value={prioridadeFiltro}
-					aria-label="Filtrar por prioridade"
-				>
-					<option value="todas">Todas as prioridades</option>
-					{#each PRIORIDADES as p (p.id)}
-						<option value={p.id}>Prioridade {p.nome.toLowerCase()}</option>
-					{/each}
-				</select>
-
-				<select class="campo-ferramenta" bind:value={ordem} aria-label="Ordenar tarefas">
-					<option value="criacao">Ordem de criação</option>
-					<option value="prazo">Prazo mais próximo</option>
-					<option value="prioridade">Maior prioridade</option>
-				</select>
-			</div>
-		</div>
-
-		<div class="filtros" role="tablist">
-			{#each filtros as f (f.id)}
-				<button
-					type="button"
-					role="tab"
-					aria-selected={filtro === f.id}
-					class="filtro"
-					class:ativo={filtro === f.id}
-					onclick={() => (filtro = f.id)}
-				>
-					{f.nome}
-					<span class="qtd">{f.qtd}</span>
-				</button>
+		<select
+			class="campo-ferramenta"
+			bind:value={prioridadeFiltro}
+			aria-label="Filtrar por prioridade"
+		>
+			<option value="todas">Todas as prioridades</option>
+			{#each PRIORIDADES as p (p.id)}
+				<option value={p.id}>Prioridade {p.nome.toLowerCase()}</option>
 			{/each}
-		</div>
+		</select>
 
-		<table>
-			<thead>
-				<tr>
-					<th>Tarefa</th>
-					<th>Status</th>
-					<th class="col-acoes">Ações</th>
-				</tr>
-			</thead>
-			<tbody>
-				{#each visiveis as t (t.id)}
-					<tr>
-						<td class="col-titulo">
-							<div class="titulo-linha">
-								<form method="POST" action="/painel?/alternar" use:enhance>
+		<select class="campo-ferramenta" bind:value={ordem} aria-label="Ordenar tarefas">
+			<option value="criacao">Ordem de criação</option>
+			<option value="prazo">Prazo mais próximo</option>
+			<option value="prioridade">Maior prioridade</option>
+		</select>
+	</section>
+
+	<!-- Quadro -->
+	<section class="quadro">
+		{#each colunas as col (col.id)}
+			<div
+				class="lista"
+				class:alvo={sobre === col.id && arrastando !== null}
+				role="region"
+				aria-label="Lista {col.nome}"
+				ondragover={(e) => {
+					e.preventDefault();
+					sobre = col.id;
+				}}
+				ondragleave={(e) => {
+					if (!e.currentTarget.contains(/** @type {Node} */ (e.relatedTarget))) sobre = null;
+				}}
+				ondrop={(e) => soltar(e, col.feita)}
+			>
+				<header class="lista-topo">
+					<h2>{col.nome}</h2>
+					<span class="contador">{col.itens.length}</span>
+				</header>
+
+				<div class="cartoes">
+					{#each col.itens as t (t.id)}
+						{@const sit = situacaoPrazo(t)}
+						<article
+							class="cartao"
+							class:arrastado={String(arrastando) === String(t.id)}
+							draggable="true"
+							ondragstart={(e) => iniciarArrasto(e, t.id)}
+							ondragend={fimArrasto}
+						>
+							<div class="etiquetas">
+								<span class="etiqueta {prioridadeDe(t)}">{nomePrioridade(prioridadeDe(t))}</span>
+							</div>
+
+							<div class="cartao-linha">
+								<form id="alt-{t.id}" method="POST" action="/painel?/alternar" use:enhance>
 									<input type="hidden" name="id" value={t.id} />
 									<button
 										type="submit"
 										class="check"
 										class:marcado={t.concluida}
 										title={t.concluida ? "Marcar como pendente" : "Marcar como concluída"}
-										aria-label={t.concluida
-											? "Marcar como pendente"
-											: "Marcar como concluída"}
+										aria-label={t.concluida ? "Marcar como pendente" : "Marcar como concluída"}
 									>
 										{#if t.concluida}✓{/if}
 									</button>
 								</form>
 
-								<div class="titulo-bloco">
-									<a href="/painel/{t.id}" class="link-tarefa" class:riscado={t.concluida}>
-										{t.titulo}
+								<a
+									href="/painel/{t.id}"
+									draggable="false"
+									class="link-tarefa"
+									class:riscado={t.concluida}
+								>
+									{t.titulo}
+								</a>
+							</div>
+
+							<div class="cartao-rodape">
+								{#if t.prazo}
+									<span
+										class="prazo"
+										class:atrasada={sit === "atrasada" && !t.concluida}
+										class:hoje={sit === "hoje" && !t.concluida}
+										class:feito={t.concluida}
+										title={sit === "atrasada" ? "Atrasada" : sit === "hoje" ? "Vence hoje" : "Prazo"}
+									>
+										🕒 {formatarPrazo(t.prazo)}
+									</span>
+								{:else}
+									<span></span>
+								{/if}
+
+								<div class="mini-acoes">
+									<a
+										href="/painel/nova?editar={t.id}"
+										onclick={(e) => {
+											e.preventDefault();
+											abrirEditar(t);
+										}}
+										draggable="false"
+										class="mini"
+										title="Editar"
+										aria-label="Editar"
+									>
+										✎
 									</a>
-
-									<div class="meta">
-										<span class="prio {prioridadeDe(t)}">
-											{nomePrioridade(prioridadeDe(t))}
-										</span>
-
-										{#if t.prazo}
-											{@const sit = situacaoPrazo(t)}
-											<span
-												class="prazo"
-												class:atrasada={sit === "atrasada"}
-												class:hoje={sit === "hoje"}
-											>
-												{#if sit === "atrasada"}Atrasada ·
-												{:else if sit === "hoje"}Vence hoje ·
-												{:else}Prazo:
-												{/if}
-												{formatarPrazo(t.prazo)}
-											</span>
-										{/if}
-									</div>
+									<form method="POST" action="/painel?/deletar" onsubmit={confirmar}>
+										<input type="hidden" name="id" value={t.id} />
+										<button
+											type="submit"
+											class="mini perigo"
+											title="Deletar"
+											aria-label="Deletar"
+										>
+											🗑
+										</button>
+									</form>
 								</div>
 							</div>
-						</td>
-						<td>
-							<span class="selo" class:feito={t.concluida}>
-								<i class="ponto-selo"></i>
-								{t.concluida ? "Concluída" : "Pendente"}
-							</span>
-						</td>
-						<td class="col-acoes">
-							<div class="celula-acoes">
-								<a href="/painel/nova?editar={t.id}" class="botao secundario pequeno">Editar</a>
-								<form method="POST" action="/painel?/deletar" onsubmit={confirmar}>
-									<input type="hidden" name="id" value={t.id} />
-									<button type="submit" class="botao perigo pequeno">Deletar</button>
-								</form>
-							</div>
-						</td>
-					</tr>
-				{:else}
-					<tr class="linha-vazia">
-						<td colspan="3" class="vazio">
+						</article>
+					{:else}
+						<p class="lista-vazia">
 							{#if total === 0}
-								<strong>Nenhuma tarefa ainda</strong>
-								<span>Clique em "Nova tarefa" para criar a primeira.</span>
+								Nenhuma tarefa ainda.
 							{:else}
-								<strong>Nada encontrado</strong>
-								<span>Tente outro filtro ou outro termo de busca.</span>
+								Nenhum cartão aqui.
 							{/if}
-						</td>
-					</tr>
-				{/each}
-			</tbody>
-		</table>
+						</p>
+					{/each}
+				</div>
+
+				{#if !col.feita}
+					<a
+						href="/painel/nova"
+						class="adicionar"
+						onclick={(e) => {
+							e.preventDefault();
+							abrirNova();
+						}}>+ Adicionar tarefa</a
+					>
+				{/if}
+			</div>
+		{/each}
 	</section>
 
 	<a href="/" class="voltar">← Voltar</a>
 </main>
+
+<ModalTarefa
+	aberto={modalAberto}
+	tarefa={tarefaEditando}
+	onfechar={() => (modalAberto = false)}
+/>
 
 <style>
 	main {
@@ -274,7 +338,7 @@
 		align-items: center;
 		flex-wrap: wrap;
 		gap: 1rem;
-		margin-bottom: 1.5rem;
+		margin-bottom: 1.2rem;
 	}
 
 	h1 {
@@ -322,61 +386,35 @@
 		color: var(--accent-contrast);
 	}
 
-	.botao.perigo {
-		background: var(--err);
-		color: #fff;
-	}
-
-	.botao.pequeno {
-		padding: 0.35rem 0.8rem;
-		font-size: 0.85rem;
-	}
-
-	/* ---------- Cards de resumo ---------- */
-	.cards {
-		display: grid;
-		grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-		gap: 1rem;
-		margin: 0 0 1.5rem;
-	}
-
-	.card {
+	/* ---------- Resumo ---------- */
+	.resumo {
 		display: flex;
-		flex-direction: column;
-		gap: 0.4rem;
-		padding: 1.2rem;
-		background: var(--surface);
-		border: 1px solid var(--border);
-		border-radius: 12px;
-		box-shadow: var(--shadow);
-	}
-
-	.card.destaque {
-		background: var(--accent);
-		border-color: transparent;
-		color: var(--accent-contrast);
-	}
-
-	.card-titulo {
-		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
 		gap: 0.5rem;
-		font-size: 0.9rem;
-		opacity: 0.85;
+		margin-bottom: 1rem;
 	}
 
-	.card-valor {
-		font-size: 2rem;
-		line-height: 1.1;
+	.chip {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.4rem;
+		padding: 0.3rem 0.75rem;
+		background: var(--surface);
+		border: 1px solid var(--border);
+		border-radius: 999px;
+		font-size: 0.85rem;
+		font-weight: 600;
 	}
 
-	.card-valor.alerta {
+	.chip.alerta {
 		color: var(--err);
+		border-color: var(--err);
 	}
 
 	.ponto {
-		width: 0.6rem;
-		height: 0.6rem;
+		width: 0.55rem;
+		height: 0.55rem;
 		border-radius: 50%;
 		background: var(--selo-text);
 	}
@@ -389,9 +427,18 @@
 		background: var(--err);
 	}
 
+	.progresso {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin-left: auto;
+		font-size: 0.85rem;
+		font-weight: 600;
+	}
+
 	.barra {
+		width: 140px;
 		height: 8px;
-		margin-top: 0.4rem;
 		background: var(--border);
 		border-radius: 999px;
 		overflow: hidden;
@@ -404,51 +451,18 @@
 		transition: width 0.4s ease;
 	}
 
-	/* ---------- Caixa da tabela ---------- */
-	.tabela-caixa {
-		background: var(--surface);
-		border: 1px solid var(--border);
-		border-radius: 12px;
-		box-shadow: var(--shadow);
-		overflow: hidden;
-	}
-
-	.tabela-topo {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		flex-wrap: wrap;
-		gap: 0.8rem;
-		padding: 1rem 1.2rem;
-	}
-
-	.titulo-grupo {
-		display: flex;
-		align-items: baseline;
-		gap: 0.7rem;
-	}
-
-	.tabela-topo h2 {
-		margin: 0;
-		font-size: 1.1rem;
-		color: var(--text-bold);
-	}
-
-	.contador {
-		color: var(--text-muted);
-		font-size: 0.9rem;
-	}
-
+	/* ---------- Ferramentas ---------- */
 	.ferramentas {
 		display: flex;
 		flex-wrap: wrap;
 		gap: 0.5rem;
+		margin-bottom: 1rem;
 	}
 
 	.campo-ferramenta {
 		box-sizing: border-box;
 		padding: 0.5rem 0.8rem;
-		background: var(--surface-alt);
+		background: var(--surface);
 		color: var(--text-color);
 		border: 1px solid var(--border);
 		border-radius: 8px;
@@ -457,7 +471,7 @@
 	}
 
 	.busca {
-		width: 200px;
+		width: 220px;
 	}
 
 	.campo-ferramenta::placeholder {
@@ -469,111 +483,159 @@
 		outline-offset: 0;
 	}
 
-	/* ---------- Filtros ---------- */
-	.filtros {
-		display: flex;
-		gap: 0.25rem;
-		padding: 0 1.2rem;
-		border-bottom: 1px solid var(--border);
-		overflow-x: auto;
+	/* ---------- Quadro ---------- */
+	.quadro {
+		display: grid;
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+		gap: 1rem;
+		align-items: start;
 	}
 
-	.filtro {
+	.lista {
+		display: flex;
+		flex-direction: column;
+		gap: 0.6rem;
+		padding: 0.7rem;
+		background: var(--surface-alt);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+		transition:
+			outline-color 0.12s,
+			background 0.12s;
+		outline: 2px dashed transparent;
+		outline-offset: -2px;
+	}
+
+	.lista.alvo {
+		outline-color: var(--accent);
+		background: color-mix(in srgb, var(--accent) 8%, var(--surface-alt));
+	}
+
+	.lista-topo {
 		display: flex;
 		align-items: center;
-		gap: 0.4rem;
-		padding: 0.6rem 0.9rem;
-		background: none;
-		border: none;
-		border-bottom: 2px solid transparent;
-		margin-bottom: -1px;
-		font: inherit;
-		font-size: 0.92rem;
-		font-weight: 600;
-		color: var(--text-muted);
-		cursor: pointer;
-		white-space: nowrap;
+		justify-content: space-between;
+		padding: 0.2rem 0.4rem 0;
 	}
 
-	.filtro:hover {
-		color: var(--text-color);
+	.lista-topo h2 {
+		margin: 0;
+		font-size: 0.95rem;
+		color: var(--text-bold);
 	}
 
-	.filtro.ativo {
-		color: var(--accent);
-		border-bottom-color: var(--accent);
-	}
-
-	.qtd {
-		padding: 0.05rem 0.5rem;
-		background: var(--surface-alt);
+	.contador {
+		padding: 0.05rem 0.55rem;
+		background: var(--surface);
 		border-radius: 999px;
 		font-size: 0.78rem;
-	}
-
-	/* ---------- Tabela ---------- */
-	table {
-		width: 100%;
-		border-collapse: collapse;
-	}
-
-	th,
-	td {
-		text-align: left;
-		padding: 0.8rem 1.2rem;
-	}
-
-	th {
-		font-size: 0.78rem;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
+		font-weight: 700;
 		color: var(--text-muted);
-		background: var(--surface-alt);
 	}
 
-	.col-titulo {
-		width: 100%;
-	}
-
-	.col-acoes {
-		text-align: right;
-		width: 1%;
-		white-space: nowrap;
-	}
-
-	.celula-acoes {
+	.cartoes {
 		display: flex;
-		gap: 0.5rem;
-		justify-content: flex-end;
-		align-items: center;
+		flex-direction: column;
+		gap: 0.55rem;
+		min-height: 3rem;
 	}
 
-	tbody tr {
-		border-top: 1px solid var(--border);
+	.lista-vazia {
+		margin: 0;
+		padding: 1rem 0.5rem;
+		text-align: center;
+		font-size: 0.88rem;
+		color: var(--text-muted);
+	}
+
+	.adicionar {
+		display: block;
+		padding: 0.5rem 0.6rem;
+		border-radius: 8px;
+		color: var(--text-muted);
+		font-size: 0.9rem;
+		text-decoration: none;
 		transition: background 0.12s;
 	}
 
-	tbody tr:hover {
+	.adicionar:hover {
 		background: var(--surface-hover);
+		color: var(--text-color);
 	}
 
-	.titulo-linha {
-		display: flex;
-		align-items: center;
-		gap: 0.8rem;
-	}
-
-	.titulo-bloco {
+	/* ---------- Cartão ---------- */
+	.cartao {
 		display: flex;
 		flex-direction: column;
+		gap: 0.5rem;
+		padding: 0.6rem 0.7rem 0.5rem;
+		background: var(--surface);
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		box-shadow: var(--shadow);
+		cursor: grab;
+		transition:
+			transform 0.12s,
+			box-shadow 0.12s,
+			opacity 0.12s;
+	}
+
+	.cartao:hover {
+		transform: translateY(-1px);
+	}
+
+	.cartao:active {
+		cursor: grabbing;
+	}
+
+	.cartao.arrastado {
+		opacity: 0.45;
+		transform: rotate(2deg);
+	}
+
+	.etiquetas {
+		display: flex;
+		flex-wrap: wrap;
 		gap: 0.3rem;
-		min-width: 0;
+	}
+
+	.etiqueta {
+		min-width: 2.2rem;
+		padding: 0 0.5rem;
+		border-radius: 4px;
+		background: #d99a00;
+		color: #fff;
+		font-size: 0.68rem;
+		font-weight: 700;
+		line-height: 1.15rem;
+		text-align: center;
+		text-transform: uppercase;
+		letter-spacing: 0.03em;
+	}
+
+	.etiqueta.alta {
+		background: var(--err);
+	}
+
+	.etiqueta.media {
+		background: #d99a00;
+	}
+
+	.etiqueta.baixa {
+		background: #1f9d55;
+	}
+
+	.cartao-linha {
+		display: flex;
+		align-items: flex-start;
+		gap: 0.6rem;
 	}
 
 	.link-tarefa {
 		color: var(--text-color);
 		text-decoration: none;
 		font-weight: 500;
+		line-height: 1.35;
 		overflow-wrap: anywhere;
 	}
 
@@ -586,63 +648,18 @@
 		text-decoration: line-through;
 	}
 
-	/* ---------- Prioridade e prazo ---------- */
-	.meta {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 0.5rem;
-		font-size: 0.8rem;
-	}
-
-	.prio {
-		--cor: #d99a00;
-		padding: 0.08rem 0.55rem;
-		border-radius: 999px;
-		font-size: 0.75rem;
-		font-weight: 700;
-		color: color-mix(in srgb, var(--cor) 70%, var(--text-bold));
-		background: color-mix(in srgb, var(--cor) 16%, var(--surface));
-	}
-
-	.prio.alta {
-		--cor: var(--err);
-	}
-
-	.prio.media {
-		--cor: #d99a00;
-	}
-
-	.prio.baixa {
-		--cor: #1f9d55;
-	}
-
-	.prazo {
-		color: var(--text-muted);
-	}
-
-	.prazo.atrasada {
-		color: var(--err);
-		font-weight: 700;
-	}
-
-	.prazo.hoje {
-		color: color-mix(in srgb, #d99a00 75%, var(--text-bold));
-		font-weight: 700;
-	}
-
-	/* ---------- Botão de concluir ---------- */
 	.check {
 		display: grid;
 		place-items: center;
 		flex-shrink: 0;
-		width: 1.5rem;
-		height: 1.5rem;
+		width: 1.2rem;
+		height: 1.2rem;
+		margin-top: 0.1rem;
 		padding: 0;
 		background: transparent;
 		border: 2px solid var(--text-muted);
 		border-radius: 50%;
-		font-size: 0.85rem;
+		font-size: 0.7rem;
 		font-weight: 700;
 		line-height: 1;
 		color: #fff;
@@ -655,7 +672,7 @@
 
 	.check:hover {
 		border-color: var(--selo-feito-text);
-		transform: scale(1.1);
+		transform: scale(1.12);
 	}
 
 	.check.marcado {
@@ -663,47 +680,76 @@
 		border-color: var(--selo-feito-text);
 	}
 
-	/* ---------- Estado vazio ---------- */
-	.linha-vazia:hover {
-		background: none;
-	}
-
-	.vazio {
-		text-align: center;
-		color: var(--text-muted);
-		padding: 2.5rem 1rem;
-	}
-
-	.vazio strong {
-		display: block;
-		margin-bottom: 0.3rem;
-		font-size: 1.05rem;
-		color: var(--text-bold);
-	}
-
-	/* ---------- Selos de status ---------- */
-	.selo {
-		display: inline-flex;
+	/* ---------- Rodapé do cartão ---------- */
+	.cartao-rodape {
+		display: flex;
 		align-items: center;
-		gap: 0.4rem;
-		background: var(--selo-bg);
-		color: var(--selo-text);
-		border-radius: 999px;
-		padding: 0.2rem 0.75rem;
+		justify-content: space-between;
+		gap: 0.5rem;
+		min-height: 1.6rem;
+	}
+
+	.prazo {
+		padding: 0.1rem 0.45rem;
+		border-radius: 4px;
+		font-size: 0.75rem;
+		color: var(--text-muted);
+	}
+
+	.prazo.atrasada {
+		background: var(--err);
+		color: #fff;
+		font-weight: 700;
+	}
+
+	.prazo.hoje {
+		background: #d99a00;
+		color: #fff;
+		font-weight: 700;
+	}
+
+	.prazo.feito {
+		background: #1f9d55;
+		color: #fff;
+	}
+
+	.mini-acoes {
+		display: flex;
+		align-items: center;
+		gap: 0.15rem;
+		margin-left: auto;
+		opacity: 0;
+		transition: opacity 0.12s;
+	}
+
+	.cartao:hover .mini-acoes,
+	.cartao:focus-within .mini-acoes {
+		opacity: 1;
+	}
+
+	.mini {
+		display: grid;
+		place-items: center;
+		width: 1.7rem;
+		height: 1.7rem;
+		padding: 0;
+		background: none;
+		border: none;
+		border-radius: 6px;
 		font-size: 0.85rem;
-		font-weight: 600;
+		color: var(--text-muted);
+		text-decoration: none;
+		cursor: pointer;
 	}
 
-	.selo.feito {
-		background: var(--selo-feito-bg);
-		color: var(--selo-feito-text);
+	.mini:hover {
+		background: var(--surface-hover);
+		color: var(--text-color);
 	}
 
-	.ponto-selo {
-		width: 0.45rem;
-		height: 0.45rem;
-		border-radius: 50%;
-		background: currentColor;
+	.mini.perigo:hover {
+		background: var(--err);
+		color: #fff;
 	}
 
 	/* ---------- Rodapé ---------- */
@@ -718,47 +764,33 @@
 		text-decoration: underline;
 	}
 
-	/* ---------- Celular: cada linha vira um cartão ---------- */
-	@media (max-width: 640px) {
-		thead {
-			display: none;
+	/* ---------- Celular ---------- */
+	@media (max-width: 720px) {
+		.quadro {
+			grid-template-columns: 1fr;
 		}
 
-		table,
-		tbody,
-		tr,
-		td {
-			display: block;
-			width: 100%;
-			box-sizing: border-box;
-		}
-
-		tbody tr {
-			padding: 0.8rem 0;
-		}
-
-		td {
-			padding: 0.3rem 1.2rem;
-		}
-
-		.col-acoes {
-			text-align: left;
+		.progresso {
+			margin-left: 0;
 			width: 100%;
 		}
 
-		.celula-acoes {
-			justify-content: flex-start;
-			margin-top: 0.4rem;
+		.barra {
+			flex: 1;
+			width: auto;
 		}
 
-		.ferramentas {
-			width: 100%;
-		}
-
-		.campo-ferramenta,
-		.busca {
+		.busca,
+		.campo-ferramenta {
 			flex: 1 1 100%;
 			width: 100%;
+		}
+	}
+
+	/* telas de toque não têm hover: mantém as mini ações visíveis */
+	@media (hover: none) {
+		.mini-acoes {
+			opacity: 1;
 		}
 	}
 </style>
