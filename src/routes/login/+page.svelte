@@ -8,7 +8,6 @@
 	let mostrarSenha = $state(false);
 	let enviando = $state(false);
 
-	// se o servidor devolver um modo (ex.: cadastro ok -> volta pro login), troca a aba
 	$effect(() => {
 		if (form?.modo) modo = form.modo;
 	});
