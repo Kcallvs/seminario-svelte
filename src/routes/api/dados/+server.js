@@ -1,14 +1,28 @@
 import { json } from "@sveltejs/kit";
+import {tarefas,novoID} from '$lib/servidor/dados';
 
-// Endpoint de exemplo: GET /api/dados
-// Em produção, isso roda atrás do middleware definido em hooks.server.js,
-// então já chega aqui depois da checagem feita no handle().
-export function GET() {
-	const pedidos = [
-		{ cliente: "Ana", status: "em preparo" },
-		{ cliente: "Bruno", status: "entregue" },
-		{ cliente: "Carla", status: "em preparo" }
-	];
-
-	return json(pedidos);
+export async function GET() {
+	return json(tarefas);
 }
+
+export async function POST({ request }) {
+	const dados = await request.json();
+  
+	if (!dados.titulo || typeof dados.titulo !== 'string') {
+	  return json({ erro: 'titulo é obrigatório' }, { status: 400 });
+	}
+  
+	/** @type {import('$lib/servidor/dados').Tarefa} */
+	const nova = {
+	  id: novoID(),
+	  titulo: dados.titulo,
+	  descricao: dados.descricao ?? '',
+	  prazo: dados.prazo ?? '',
+	  prioridade: ['baixa', 'media', 'alta'].includes(dados.prioridade) ? dados.prioridade : 'media',
+	  concluida: false,
+	  dono: dados.dono ?? ''
+	};
+  
+	tarefas.push(nova);
+	return json(nova, { status: 201 });
+  }
