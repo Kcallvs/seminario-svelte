@@ -1,4 +1,5 @@
 <script>
+	import { untrack } from "svelte";
 	import { enhance } from "$app/forms";
 	import { invalidateAll } from "$app/navigation";
 	import { PRIORIDADES, prioridadeDe } from "$lib/tarefas.js";
@@ -24,7 +25,41 @@
 	let prioridade = $state("media");
 	let concluida = $state(false);
 
+	// Imagem
+	/** @type {HTMLInputElement | undefined} */
+	let arquivoInput = $state();
+	let removerImagem = $state(false);
+	let previa = $state(""); // pré-visualização do arquivo escolhido agora
+
+	const TAMANHO_MAX = 2 * 1024 * 1024;
+
 	let editando = $derived(tarefa !== null);
+	let imagemAtual = $derived(editando && tarefa?.imagem && !removerImagem ? tarefa.imagem : "");
+
+	function limparPrevia() {
+		if (previa) URL.revokeObjectURL(previa);
+		previa = "";
+		if (arquivoInput) arquivoInput.value = "";
+	}
+
+	/** @param {Event & { currentTarget: HTMLInputElement }} e */
+	function escolherArquivo(e) {
+		const arq = e.currentTarget.files?.[0];
+		if (previa) URL.revokeObjectURL(previa);
+		previa = "";
+
+		if (!arq) return;
+
+		if (arq.size > TAMANHO_MAX) {
+			erro = "A imagem pode ter no máximo 2 MB.";
+			e.currentTarget.value = "";
+			return;
+		}
+
+		erro = "";
+		removerImagem = false;
+		previa = URL.createObjectURL(arq);
+	}
 
 	// Abre/fecha o <dialog> e preenche os campos a cada abertura
 	$effect(() => {
@@ -38,6 +73,8 @@
 			concluida = tarefa?.concluida ?? false;
 			erro = "";
 			enviando = false;
+			removerImagem = false;
+			untrack(limparPrevia);
 
 			if (!dialogo.open) dialogo.showModal();
 		} else if (dialogo.open) {
@@ -68,6 +105,7 @@
 	<form
 		method="POST"
 		action="/painel/nova"
+		enctype="multipart/form-data"
 		use:enhance={() => {
 			enviando = true;
 			erro = "";
@@ -122,6 +160,31 @@
 				bind:value={descricao}
 			></textarea>
 			<span class="dica contador">{descricao.length}/500</span>
+		</div>
+
+		<div class="campo">
+			<label for="modal-imagem">Imagem <span class="opcional">(opcional)</span></label>
+
+			{#if previa || imagemAtual}
+				<img src={previa || imagemAtual} alt="Pré-visualização" class="previa" />
+			{/if}
+
+			<input
+				bind:this={arquivoInput}
+				id="modal-imagem"
+				name="imagem"
+				type="file"
+				accept="image/png,image/jpeg,image/webp,image/gif"
+				onchange={escolherArquivo}
+			/>
+			<span class="dica">PNG, JPG, WEBP ou GIF, até 2 MB.</span>
+
+			{#if editando && tarefa.imagem && !previa}
+				<label class="check-linha">
+					<input type="checkbox" name="removerImagem" bind:checked={removerImagem} />
+					<span>Remover imagem atual</span>
+				</label>
+			{/if}
 		</div>
 
 		<div class="linha">
@@ -498,6 +561,47 @@
 	.botao:disabled {
 		opacity: 0.6;
 		cursor: wait;
+	}
+
+	/* ---------- Imagem ---------- */
+	.previa {
+		display: block;
+		max-width: 100%;
+		max-height: 180px;
+		object-fit: contain;
+		border: 1px solid var(--border);
+		border-radius: 8px;
+		background: var(--surface-alt);
+	}
+
+	input[type="file"] {
+		box-sizing: border-box;
+		width: 100%;
+		padding: 0.5rem;
+		font-family: inherit;
+		font-size: 0.9rem;
+		color: var(--text-muted);
+		background: var(--surface-alt);
+		border: 1px dashed var(--border);
+		border-radius: 8px;
+		cursor: pointer;
+	}
+
+	input[type="file"]::file-selector-button {
+		margin-right: 0.8rem;
+		padding: 0.4rem 0.8rem;
+		font: inherit;
+		font-weight: 600;
+		color: var(--accent-contrast);
+		background: var(--btn-secondary);
+		border: none;
+		border-radius: 6px;
+		cursor: pointer;
+	}
+
+	input[type="file"]:focus-visible {
+		outline: 2px solid var(--accent);
+		outline-offset: 2px;
 	}
 
 	@media (max-width: 520px) {

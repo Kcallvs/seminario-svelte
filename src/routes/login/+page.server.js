@@ -1,7 +1,6 @@
 import { redirect, fail } from "@sveltejs/kit";
 
-// ⚠️ TEMPORÁRIO: guarda os usuários na memória do servidor, só para testar.
-// Some tudo quando o servidor reinicia. Troque pelo seu backend/banco.
+// TEMPORÁRIO: guarda os usuários na memória do servidor, só para testar.
 const usuarios = new Map();
 
 export const actions = {

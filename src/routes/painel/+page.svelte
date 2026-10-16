@@ -217,6 +217,10 @@
 							ondragstart={(e) => iniciarArrasto(e, t.id)}
 							ondragend={fimArrasto}
 						>
+							{#if t.imagem}
+								<img src={t.imagem} alt="" class="capa" draggable="false" />
+							{/if}
+
 							<div class="etiquetas">
 								<span class="etiqueta {prioridadeDe(t)}">{nomePrioridade(prioridadeDe(t))}</span>
 							</div>
@@ -591,6 +595,15 @@
 	.cartao.arrastado {
 		opacity: 0.45;
 		transform: rotate(2deg);
+	}
+
+	/* Imagem de capa do cartão */
+	.capa {
+		display: block;
+		width: 100%;
+		max-height: 140px;
+		object-fit: cover;
+		border-radius: 6px;
 	}
 
 	.etiquetas {
