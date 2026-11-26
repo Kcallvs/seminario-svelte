@@ -1,40 +1,30 @@
-import { redirect } from "@sveltejs/kit";
-import { tarefas } from "$lib/servidor/dados";
-import { apagarArquivo } from "$lib/servidor/uploads.js";
+import { error, redirect } from "@sveltejs/kit";
 
-export function load({ cookies }) {
-	const usuario = cookies.get("sessao");
-	return {
-		tarefas: tarefas.filter((t) => t.dono === usuario)
-	};
+export async function load({ cookies, fetch }) {
+    const usuario = cookies.get("sessao");
+
+    if (!usuario) {
+        redirect(303, "/login");
+    }
+
+    const resposta = await fetch("/api/dados");
+
+    if (resposta.status === 401) {
+        redirect(303, "/login");
+    }
+
+    if (!resposta.ok) {
+        error(resposta.status, "Não foi possível carregar as tarefas.");
+    }
+
+    return {
+        tarefas: await resposta.json()
+    };
 }
 
 export const actions = {
-	sair: async ({ cookies }) => {
-		cookies.delete("sessao", { path: "/" });
-		redirect(303, "/login");
-	},
-
-	deletar: async ({ request, cookies }) => {
-		const form = await request.formData();
-		const id = Number(form.get("id"));
-		const usuario = cookies.get("sessao");
-
-		const i = tarefas.findIndex((t) => t.id === id && t.dono === usuario);
-		if (i !== -1) {
-			await apagarArquivo(tarefas[i].imagem);
-			tarefas.splice(i, 1);
-		}
-
-		redirect(303, "/painel");
-	},
-
-	alternar: async ({ request, cookies }) => {
-		const form = await request.formData();
-		const id = Number(form.get("id"));
-		const usuario = cookies.get("sessao");
-
-		const tarefa = tarefas.find((t) => t.id === id && t.dono === usuario);
-		if (tarefa) tarefa.concluida = !tarefa.concluida;
-	}
+    sair: async ({ cookies }) => {
+        cookies.delete("sessao", { path: "/" });
+        redirect(303, "/login");
+    }
 };

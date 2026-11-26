@@ -1,3 +1,4 @@
+
 import { json } from "@sveltejs/kit";
 import { tarefas } from "$lib/servidor/dados.js";
 import { PRIORIDADES, prazoValido } from "$lib/tarefas.js";
@@ -57,22 +58,94 @@ export async function PUT({ params, request, cookies }) {
 
             const form = await request.formData();
 
+            const tituloRaw = form.get("titulo");
+            const descricaoRaw = form.get("descricao");
+            const prazoRaw = form.get("prazo");
+            const prioridadeRaw = form.get("prioridade");
+            const concluidaRaw = form.get("concluida");
+            const removerImagemRaw = form.get("removerImagem");
+
+            if (
+                typeof tituloRaw !== "string" ||
+                typeof descricaoRaw !== "string" ||
+                (prazoRaw !== null && typeof prazoRaw !== "string") ||
+                (prioridadeRaw !== null && typeof prioridadeRaw !== "string")
+            ) {
+                return json(
+                    { erro: "Dados enviados em formato inválido." },
+                    { status: 400 }
+                );
+            }
+
+            if (
+                (concluidaRaw !== null && concluidaRaw !== "on") ||
+                (removerImagemRaw !== null && removerImagemRaw !== "on")
+            ) {
+                return json(
+                    { erro: "Valor de campo inválido." },
+                    { status: 400 }
+                );
+            }
+
             dados = {
-                titulo: form.get("titulo")?.toString().trim() ?? "",
-                descricao: form.get("descricao")?.toString().trim() ?? "",
-                prazo: form.get("prazo")?.toString() ?? "",
-                prioridade: form.get("prioridade")?.toString() ?? "media",
-                concluida: form.get("concluida") === "on"
+                titulo: tituloRaw.trim(),
+                descricao: descricaoRaw.trim(),
+                prazo: prazoRaw ?? "",
+                prioridade: prioridadeRaw ?? "media",
+                concluida: concluidaRaw === "on"
             };
 
             arquivo = form.get("imagem");
-            removerImagem = form.get("removerImagem") === "on";
+            removerImagem = removerImagemRaw === "on";
+
+        } else if (tipoConteudo.includes("application/json")) {
+            try {
+                dados = await request.json();
+            } catch {
+                return json(
+                    { erro: "JSON inválido." },
+                    { status: 400 }
+                );
+            }
+
+            if (
+                dados === null ||
+                typeof dados !== "object" ||
+                Array.isArray(dados)
+            ) {
+                return json(
+                    { erro: "Os dados enviados são inválidos." },
+                    { status: 400 }
+                );
+            }
+
+            const camposPermitidos = [
+                "titulo",
+                "descricao",
+                "prazo",
+                "prioridade",
+                "concluida"
+            ];
+
+            if (Object.keys(dados).some((campo) => !camposPermitidos.includes(campo))) {
+                return json(
+                    { erro: "Campo não permitido." },
+                    { status: 400 }
+                );
+            }
+
         } else {
-            dados = await request.json();
+            return json(
+                { erro: "Tipo de conteúdo não suportado." },
+                { status: 415 }
+            );
         }
 
-        if (formulario || dados.titulo !== undefined) {
-            if (typeof dados.titulo !== "string" || dados.titulo.trim().length < 3) {
+        if (formulario || Object.hasOwn(dados, "titulo")) {
+            if (
+                typeof dados.titulo !== "string" ||
+                dados.titulo.trim().length < 3
+            ) {
                 return json(
                     { erro: "O título precisa ter pelo menos 3 caracteres." },
                     { status: 400 }
@@ -80,8 +153,11 @@ export async function PUT({ params, request, cookies }) {
             }
         }
 
-        if (formulario || dados.descricao !== undefined) {
-            if (typeof dados.descricao !== "string" || dados.descricao.length > 500) {
+        if (formulario || Object.hasOwn(dados, "descricao")) {
+            if (
+                typeof dados.descricao !== "string" ||
+                dados.descricao.length > 500
+            ) {
                 return json(
                     { erro: "A descrição pode ter no máximo 500 caracteres." },
                     { status: 400 }
@@ -89,8 +165,11 @@ export async function PUT({ params, request, cookies }) {
             }
         }
 
-        if (formulario || dados.prazo !== undefined) {
-            if (dados.prazo && !prazoValido(dados.prazo)) {
+        if (formulario || Object.hasOwn(dados, "prazo")) {
+            if (
+                typeof dados.prazo !== "string" ||
+                (dados.prazo !== "" && !prazoValido(dados.prazo))
+            ) {
                 return json(
                     { erro: "Data de prazo inválida." },
                     { status: 400 }
@@ -99,11 +178,31 @@ export async function PUT({ params, request, cookies }) {
         }
 
         if (
-            dados.prioridade !== undefined &&
-            !PRIORIDADES.some((p) => p.id === dados.prioridade)
+            (formulario || Object.hasOwn(dados, "prioridade")) &&
+            (
+                typeof dados.prioridade !== "string" ||
+                !PRIORIDADES.some((p) => p.id === dados.prioridade)
+            )
         ) {
             return json(
                 { erro: "Prioridade inválida." },
+                { status: 400 }
+            );
+        }
+
+        if (
+            Object.hasOwn(dados, "concluida") &&
+            typeof dados.concluida !== "boolean"
+        ) {
+            return json(
+                { erro: "O campo de conclusão deve ser verdadeiro ou falso." },
+                { status: 400 }
+            );
+        }
+
+        if (arquivo !== null && !(arquivo instanceof File)) {
+            return json(
+                { erro: "Arquivo de imagem inválido." },
                 { status: 400 }
             );
         }
@@ -126,11 +225,19 @@ export async function PUT({ params, request, cookies }) {
 
         const atualizada = {
             ...atual,
-            ...(dados.titulo !== undefined && { titulo: dados.titulo.trim() }),
-            ...(dados.descricao !== undefined && { descricao: dados.descricao }),
-            ...(dados.prazo !== undefined && { prazo: dados.prazo }),
-            ...(dados.prioridade !== undefined && { prioridade: dados.prioridade }),
-            ...(typeof dados.concluida === "boolean" && {
+            ...(dados.titulo !== undefined && {
+                titulo: dados.titulo.trim()
+            }),
+            ...(dados.descricao !== undefined && {
+                descricao: dados.descricao.trim()
+            }),
+            ...(dados.prazo !== undefined && {
+                prazo: dados.prazo
+            }),
+            ...(dados.prioridade !== undefined && {
+                prioridade: dados.prioridade
+            }),
+            ...(dados.concluida !== undefined && {
                 concluida: dados.concluida
             })
         };
@@ -139,6 +246,7 @@ export async function PUT({ params, request, cookies }) {
             const novaImagem = await salvarArquivo(arquivo);
             await apagarArquivo(atual.imagem);
             atualizada.imagem = novaImagem;
+
         } else if (removerImagem) {
             await apagarArquivo(atual.imagem);
             atualizada.imagem = null;

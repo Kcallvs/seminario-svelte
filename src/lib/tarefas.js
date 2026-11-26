@@ -23,7 +23,26 @@ export function hojeISO() {
 }
 
 export function prazoValido(texto) {
-	return /^\d{4}-\d{2}-\d{2}$/.test(texto) && !Number.isNaN(Date.parse(texto));
+    if (typeof texto !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(texto)) {
+        return false;
+    }
+
+    const [ano, mes, dia] = texto.split("-").map(Number);
+
+    if (ano < 1 || mes < 1 || mes > 12) {
+        return false;
+    }
+
+    const bissexto = ano % 400 === 0 || (ano % 4 === 0 && ano % 100 !== 0);
+
+    const diasPorMes = [
+        31,
+        bissexto ? 29 : 28,
+        31, 30, 31, 30,
+        31, 31, 30, 31, 30, 31
+    ];
+
+    return dia >= 1 && dia <= diasPorMes[mes - 1];
 }
 
 /** "2026-10-12" vira "12/10/2026" */
@@ -41,3 +60,4 @@ export function situacaoPrazo(t) {
 	if (t.prazo === hoje) return "hoje";
 	return null;
 }
+

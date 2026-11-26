@@ -1,3 +1,4 @@
+
 import { json } from "@sveltejs/kit";
 import { tarefas, novoID } from "$lib/servidor/dados.js";
 import { PRIORIDADES, prazoValido } from "$lib/tarefas.js";
@@ -25,15 +26,22 @@ export async function POST({ request, cookies }) {
     try {
         const form = await request.formData();
 
-        const titulo = form.get("titulo")?.toString().trim() ?? "";
-        const descricao = form.get("descricao")?.toString().trim() ?? "";
-        const prazo = form.get("prazo")?.toString() ?? "";
-        const prioridadeRaw = form.get("prioridade")?.toString() ?? "media";
-        const prioridade = PRIORIDADES.some((p) => p.id === prioridadeRaw)
-            ? prioridadeRaw
-            : "media";
-        const concluida = form.get("concluida") === "on";
+        const tituloRaw = form.get("titulo");
+        const descricaoRaw = form.get("descricao");
+        const prazoRaw = form.get("prazo");
+        const prioridadeRaw = form.get("prioridade");
+        const concluidaRaw = form.get("concluida");
         const arquivo = form.get("imagem");
+
+        if (typeof tituloRaw !== "string" || typeof descricaoRaw !== "string") {
+            return json(
+                { erro: "Título e descrição devem ser textos." },
+                { status: 400 }
+            );
+        }
+
+        const titulo = tituloRaw.trim();
+        const descricao = descricaoRaw.trim();
 
         if (titulo.length < 3) {
             return json(
@@ -49,9 +57,46 @@ export async function POST({ request, cookies }) {
             );
         }
 
+        if (prazoRaw !== null && typeof prazoRaw !== "string") {
+            return json(
+                { erro: "O prazo deve ser um texto." },
+                { status: 400 }
+            );
+        }
+
+        const prazo = prazoRaw ?? "";
+
         if (prazo && !prazoValido(prazo)) {
             return json(
                 { erro: "Data de prazo inválida." },
+                { status: 400 }
+            );
+        }
+
+        const prioridade = prioridadeRaw ?? "media";
+
+        if (
+            typeof prioridade !== "string" ||
+            !PRIORIDADES.some((p) => p.id === prioridade)
+        ) {
+            return json(
+                { erro: "Prioridade inválida." },
+                { status: 400 }
+            );
+        }
+
+        if (concluidaRaw !== null && concluidaRaw !== "on") {
+            return json(
+                { erro: "Valor de conclusão inválido." },
+                { status: 400 }
+            );
+        }
+
+        const concluida = concluidaRaw === "on";
+
+        if (arquivo !== null && !(arquivo instanceof File)) {
+            return json(
+                { erro: "Arquivo de imagem inválido." },
                 { status: 400 }
             );
         }
