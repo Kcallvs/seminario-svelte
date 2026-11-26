@@ -1,6 +1,5 @@
 <script>
 	import { untrack } from "svelte";
-	import { enhance } from "$app/forms";
 	import { invalidateAll } from "$app/navigation";
 	import { PRIORIDADES, prioridadeDe } from "$lib/tarefas.js";
 
@@ -25,16 +24,24 @@
 	let prioridade = $state("media");
 	let concluida = $state(false);
 
-	// Imagem
 	/** @type {HTMLInputElement | undefined} */
 	let arquivoInput = $state();
+
 	let removerImagem = $state(false);
-	let previa = $state(""); // pré-visualização do arquivo escolhido agora
+	let previa = $state("");
 
 	const TAMANHO_MAX = 2 * 1024 * 1024;
+	const TIPOS_IMAGEM = [
+		"image/jpeg",
+		"image/png",
+		"image/webp",
+		"image/gif"
+	];
 
 	let editando = $derived(tarefa !== null);
-	let imagemAtual = $derived(editando && tarefa?.imagem && !removerImagem ? tarefa.imagem : "");
+	let imagemAtual = $derived(
+		editando && tarefa?.imagem && !removerImagem ? tarefa.imagem : ""
+	);
 
 	function limparPrevia() {
 		if (previa) URL.revokeObjectURL(previa);
@@ -45,10 +52,17 @@
 	/** @param {Event & { currentTarget: HTMLInputElement }} e */
 	function escolherArquivo(e) {
 		const arq = e.currentTarget.files?.[0];
+
 		if (previa) URL.revokeObjectURL(previa);
 		previa = "";
 
 		if (!arq) return;
+
+		if (!TIPOS_IMAGEM.includes(arq.type)) {
+			erro = "Envie uma imagem PNG, JPG, WEBP ou GIF.";
+			e.currentTarget.value = "";
+			return;
+		}
 
 		if (arq.size > TAMANHO_MAX) {
 			erro = "A imagem pode ter no máximo 2 MB.";
@@ -61,7 +75,45 @@
 		previa = URL.createObjectURL(arq);
 	}
 
-	// Abre/fecha o <dialog> e preenche os campos a cada abertura
+	async function salvar(e) {
+		e.preventDefault();
+
+		if (enviando) return;
+
+		const formulario = e.currentTarget;
+
+		if (!(formulario instanceof HTMLFormElement)) return;
+
+		enviando = true;
+		erro = "";
+
+		try {
+			const dados = new FormData(formulario);
+
+			const resposta = await fetch(
+				editando ? `/api/dados/${tarefa.id}` : "/api/dados",
+				{
+					method: editando ? "PUT" : "POST",
+					body: dados
+				}
+			);
+
+			const resultado = await resposta.json().catch(() => ({}));
+
+			if (!resposta.ok) {
+				erro = resultado.erro ?? "Não foi possível salvar a tarefa.";
+				return;
+			}
+
+			onfechar();
+			await invalidateAll();
+		} catch {
+			erro = "Não foi possível estabelecer conexão com a API.";
+		} finally {
+			enviando = false;
+		}
+	}
+
 	$effect(() => {
 		if (!dialogo) return;
 
@@ -84,53 +136,40 @@
 
 	/** @param {MouseEvent} e */
 	function cliqueFora(e) {
-		// clicar no fundo escurecido (o próprio <dialog>) fecha o modal
 		if (e.target === dialogo) onfechar();
 	}
 </script>
 
-<dialog bind:this={dialogo} class="modal" onclose={onfechar} onclick={cliqueFora}>
+<dialog
+	bind:this={dialogo}
+	class="modal"
+	onclose={onfechar}
+	onclick={cliqueFora}
+>
 	<header class="modal-topo">
 		<div>
 			<h2>{editando ? "Editar tarefa" : "Nova tarefa"}</h2>
 			<p class="subtitulo">
-				{editando ? "Altere os dados e salve." : "Preencha os dados para criar uma tarefa."}
+				{editando
+					? "Altere os dados e salve."
+					: "Preencha os dados para criar uma tarefa."}
 			</p>
 		</div>
 
-		<button type="button" class="fechar" onclick={onfechar} aria-label="Fechar">✕</button>
+		<button
+			type="button"
+			class="fechar"
+			onclick={onfechar}
+			aria-label="Fechar"
+		>✕</button>
 	</header>
 
-	<!-- Reaproveita a action da tela /painel/nova -->
 	<form
-		method="POST"
-		action="/painel/nova"
+		onsubmit={salvar}
 		enctype="multipart/form-data"
-		use:enhance={() => {
-			enviando = true;
-			erro = "";
-
-			return async ({ result }) => {
-				enviando = false;
-
-				if (result.type === "failure") {
-					erro = /** @type {any} */ (result.data)?.erro ?? "Não foi possível salvar a tarefa.";
-				} else if (result.type === "error") {
-					erro = "Erro inesperado. Tente novamente.";
-				} else {
-					// sucesso (ou redirect): fecha o modal e recarrega as tarefas do painel
-					onfechar();
-					await invalidateAll();
-				}
-			};
-		}}
 	>
 		{#if erro}
 			<p class="erro" role="alert">{erro}</p>
-		{/if}
-
-		{#if editando}
-			<input type="hidden" name="id" value={tarefa.id} />
 		{/if}
 
 		<div class="campo">
@@ -144,13 +183,16 @@
 				placeholder="Ex: Estudar para a prova"
 				autocomplete="off"
 				required
+				minlength="3"
 				autofocus
 			/>
 			<span class="dica">Mínimo de 3 caracteres.</span>
 		</div>
 
 		<div class="campo">
-			<label for="modal-descricao">Descrição <span class="opcional">(opcional)</span></label>
+			<label for="modal-descricao">
+				Descrição <span class="opcional">(opcional)</span>
+			</label>
 			<textarea
 				id="modal-descricao"
 				name="descricao"
@@ -163,10 +205,16 @@
 		</div>
 
 		<div class="campo">
-			<label for="modal-imagem">Imagem <span class="opcional">(opcional)</span></label>
+			<label for="modal-imagem">
+				Imagem <span class="opcional">(opcional)</span>
+			</label>
 
 			{#if previa || imagemAtual}
-				<img src={previa || imagemAtual} alt="Pré-visualização" class="previa" />
+				<img
+					src={previa || imagemAtual}
+					alt="Pré-visualização"
+					class="previa"
+				/>
 			{/if}
 
 			<input
@@ -181,7 +229,11 @@
 
 			{#if editando && tarefa.imagem && !previa}
 				<label class="check-linha">
-					<input type="checkbox" name="removerImagem" bind:checked={removerImagem} />
+					<input
+						type="checkbox"
+						name="removerImagem"
+						bind:checked={removerImagem}
+					/>
 					<span>Remover imagem atual</span>
 				</label>
 			{/if}
@@ -189,8 +241,15 @@
 
 		<div class="linha">
 			<div class="campo">
-				<label for="modal-prazo">Prazo <span class="opcional">(opcional)</span></label>
-				<input id="modal-prazo" name="prazo" type="date" bind:value={prazo} />
+				<label for="modal-prazo">
+					Prazo <span class="opcional">(opcional)</span>
+				</label>
+				<input
+					id="modal-prazo"
+					name="prazo"
+					type="date"
+					bind:value={prazo}
+				/>
 			</div>
 
 			<fieldset class="campo">
@@ -198,7 +257,12 @@
 				<div class="segmentos">
 					{#each PRIORIDADES as p (p.id)}
 						<label class="segmento {p.id}">
-							<input type="radio" name="prioridade" value={p.id} bind:group={prioridade} />
+							<input
+								type="radio"
+								name="prioridade"
+								value={p.id}
+								bind:group={prioridade}
+							/>
 							<span>{p.nome}</span>
 						</label>
 					{/each}
@@ -207,8 +271,16 @@
 		</div>
 
 		<label class="check-linha">
-			<input type="checkbox" name="concluida" bind:checked={concluida} />
-			<span>{concluida ? "Já está concluída" : "Marcar como concluída"}</span>
+			<input
+				type="checkbox"
+				name="concluida"
+				bind:checked={concluida}
+			/>
+			<span>
+				{concluida
+					? "Já está concluída"
+					: "Marcar como concluída"}
+			</span>
 		</label>
 
 		<div class="acoes">
@@ -219,13 +291,16 @@
 					{editando ? "Salvar alterações" : "Criar tarefa"}
 				{/if}
 			</button>
-			<button type="button" class="botao secundario" onclick={onfechar}>Cancelar</button>
+			<button
+				type="button"
+				class="botao secundario"
+				onclick={onfechar}
+			>Cancelar</button>
 		</div>
 	</form>
 </dialog>
 
 <style>
-	/* ---------- Overlay ---------- */
 	.modal {
 		box-sizing: border-box;
 		width: min(560px, calc(100vw - 2rem));
@@ -306,7 +381,6 @@
 		color: var(--text-color);
 	}
 
-	/* ---------- Formulário ---------- */
 	form {
 		display: flex;
 		flex-direction: column;
@@ -390,7 +464,6 @@
 		gap: 1rem;
 	}
 
-	/* ---------- Prioridade ---------- */
 	.segmentos {
 		display: flex;
 		gap: 0.4rem;
@@ -454,7 +527,6 @@
 		outline-offset: 2px;
 	}
 
-	/* ---------- Bolinha de concluir ---------- */
 	.check-linha {
 		display: flex;
 		align-items: center;
@@ -511,7 +583,6 @@
 		outline-offset: 2px;
 	}
 
-	/* ---------- Erro ---------- */
 	.erro {
 		margin: 0;
 		padding: 0.7rem 1rem;
@@ -522,7 +593,6 @@
 		font-size: 0.9rem;
 	}
 
-	/* ---------- Botões ---------- */
 	.acoes {
 		display: flex;
 		gap: 0.6rem;
@@ -563,7 +633,6 @@
 		cursor: wait;
 	}
 
-	/* ---------- Imagem ---------- */
 	.previa {
 		display: block;
 		max-width: 100%;

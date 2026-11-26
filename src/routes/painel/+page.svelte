@@ -1,7 +1,7 @@
 <script>
-	import { enhance } from "$app/forms";
-    import ModalTarefa from "$lib/componets/ModalTarefa.svelte";
-	
+	import { invalidateAll } from "$app/navigation";
+	import ModalTarefa from "$lib/componets/ModalTarefa.svelte";
+
 	import {
 		PRIORIDADES,
 		PESO,
@@ -23,7 +23,6 @@
 	/** @type {string | null} */
 	let sobre = $state(null);
 
-	// Overlay de criar/editar tarefa
 	let modalAberto = $state(false);
 	/** @type {any} */
 	let tarefaEditando = $state(null);
@@ -37,6 +36,49 @@
 	function abrirEditar(t) {
 		tarefaEditando = t;
 		modalAberto = true;
+	}
+
+	async function alternarTarefa(id, concluida) {
+		try {
+			const resposta = await fetch(`/api/dados/${id}`, {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json"
+				},
+				body: JSON.stringify({ concluida })
+			});
+
+			const resultado = await resposta.json().catch(() => ({}));
+
+			if (!resposta.ok) {
+				alert(resultado.erro ?? "Não foi possível atualizar a tarefa.");
+				return;
+			}
+
+			await invalidateAll();
+		} catch {
+			alert("Não foi possível estabelecer conexão com a API.");
+		}
+	}
+
+	async function excluirTarefa(id) {
+		if (!confirm("Deseja realmente deletar esta tarefa?")) return;
+
+		try {
+			const resposta = await fetch(`/api/dados/${id}`, {
+				method: "DELETE"
+			});
+
+			if (!resposta.ok) {
+				const resultado = await resposta.json().catch(() => ({}));
+				alert(resultado.erro ?? "Não foi possível excluir a tarefa.");
+				return;
+			}
+
+			await invalidateAll();
+		} catch {
+			alert("Não foi possível estabelecer conexão com a API.");
+		}
 	}
 
 	let total = $derived(data.tarefas.length);
@@ -56,7 +98,6 @@
 		});
 
 		if (ordem === "prazo") {
-			// quem não tem prazo vai para o fim
 			lista.sort((a, b) =>
 				(a.prazo || "9999-12-31").localeCompare(b.prazo || "9999-12-31")
 			);
@@ -67,18 +108,10 @@
 		return lista;
 	});
 
-	// As "listas" do quadro
 	let colunas = $derived([
 		{ id: "pendentes", nome: "Pendentes", feita: false, itens: visiveis.filter((t) => !t.concluida) },
 		{ id: "concluidas", nome: "Concluídas", feita: true, itens: visiveis.filter((t) => t.concluida) }
 	]);
-
-	/** @param {SubmitEvent} e */
-	function confirmar(e) {
-		if (!confirm("Deseja realmente deletar esta tarefa?")) {
-			e.preventDefault();
-		}
-	}
 
 	/**
 	 * @param {DragEvent} e
@@ -86,6 +119,7 @@
 	 */
 	function iniciarArrasto(e, id) {
 		arrastando = id;
+
 		if (e.dataTransfer) {
 			e.dataTransfer.effectAllowed = "move";
 			e.dataTransfer.setData("text/plain", String(id));
@@ -98,19 +132,19 @@
 	}
 
 	/**
-	 * Soltar um cartão em outra lista alterna o status dele,
-	 * reaproveitando a action ?/alternar de cada cartão.
 	 * @param {DragEvent} e
 	 * @param {boolean} feita
 	 */
-	function soltar(e, feita) {
+	async function soltar(e, feita) {
 		e.preventDefault();
+
 		const t = data.tarefas.find((x) => String(x.id) === String(arrastando));
+
 		fimArrasto();
+
 		if (!t || Boolean(t.concluida) === feita) return;
 
-		const form = document.getElementById(`alt-${t.id}`);
-		if (form instanceof HTMLFormElement) form.requestSubmit();
+		await alternarTarefa(t.id, feita);
 	}
 </script>
 
@@ -128,15 +162,13 @@
 				onclick={(e) => {
 					e.preventDefault();
 					abrirNova();
-				}}>+ Nova tarefa</a
-			>
+				}}>+ Nova tarefa</a>
 			<form method="POST" action="/painel?/sair">
 				<button type="submit" class="botao secundario">Sair</button>
 			</form>
 		</div>
 	</header>
 
-	<!-- Resumo compacto -->
 	<section class="resumo">
 		<span class="chip">{total} no total</span>
 		<span class="chip"><i class="ponto pendente"></i>{pendentes} pendentes</span>
@@ -157,7 +189,6 @@
 		</div>
 	</section>
 
-	<!-- Barra de ferramentas do quadro -->
 	<section class="ferramentas">
 		<input
 			type="search"
@@ -185,7 +216,6 @@
 		</select>
 	</section>
 
-	<!-- Quadro -->
 	<section class="quadro">
 		{#each colunas as col (col.id)}
 			<div
@@ -226,18 +256,16 @@
 							</div>
 
 							<div class="cartao-linha">
-								<form id="alt-{t.id}" method="POST" action="/painel?/alternar" use:enhance>
-									<input type="hidden" name="id" value={t.id} />
-									<button
-										type="submit"
-										class="check"
-										class:marcado={t.concluida}
-										title={t.concluida ? "Marcar como pendente" : "Marcar como concluída"}
-										aria-label={t.concluida ? "Marcar como pendente" : "Marcar como concluída"}
-									>
-										{#if t.concluida}✓{/if}
-									</button>
-								</form>
+								<button
+									type="button"
+									class="check"
+									class:marcado={t.concluida}
+									title={t.concluida ? "Marcar como pendente" : "Marcar como concluída"}
+									aria-label={t.concluida ? "Marcar como pendente" : "Marcar como concluída"}
+									onclick={() => alternarTarefa(t.id, !t.concluida)}
+								>
+									{#if t.concluida}✓{/if}
+								</button>
 
 								<a
 									href="/painel/{t.id}"
@@ -278,17 +306,15 @@
 									>
 										✎
 									</a>
-									<form method="POST" action="/painel?/deletar" onsubmit={confirmar}>
-										<input type="hidden" name="id" value={t.id} />
-										<button
-											type="submit"
-											class="mini perigo"
-											title="Deletar"
-											aria-label="Deletar"
-										>
-											🗑
-										</button>
-									</form>
+									<button
+										type="button"
+										class="mini perigo"
+										title="Deletar"
+										aria-label="Deletar"
+										onclick={() => excluirTarefa(t.id)}
+									>
+										🗑
+									</button>
 								</div>
 							</div>
 						</article>
@@ -310,8 +336,7 @@
 						onclick={(e) => {
 							e.preventDefault();
 							abrirNova();
-						}}>+ Adicionar tarefa</a
-					>
+						}}>+ Adicionar tarefa</a>
 				{/if}
 			</div>
 		{/each}
@@ -335,7 +360,6 @@
 		color: var(--text-color);
 	}
 
-	/* ---------- Cabeçalho ---------- */
 	.topo {
 		display: flex;
 		justify-content: space-between;
@@ -362,7 +386,6 @@
 		align-items: center;
 	}
 
-	/* ---------- Botões ---------- */
 	.botao {
 		display: inline-block;
 		background: var(--accent);
@@ -390,7 +413,6 @@
 		color: var(--accent-contrast);
 	}
 
-	/* ---------- Resumo ---------- */
 	.resumo {
 		display: flex;
 		flex-wrap: wrap;
@@ -455,7 +477,6 @@
 		transition: width 0.4s ease;
 	}
 
-	/* ---------- Ferramentas ---------- */
 	.ferramentas {
 		display: flex;
 		flex-wrap: wrap;
@@ -487,7 +508,6 @@
 		outline-offset: 0;
 	}
 
-	/* ---------- Quadro ---------- */
 	.quadro {
 		display: grid;
 		grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -567,7 +587,6 @@
 		color: var(--text-color);
 	}
 
-	/* ---------- Cartão ---------- */
 	.cartao {
 		display: flex;
 		flex-direction: column;
@@ -597,7 +616,6 @@
 		transform: rotate(2deg);
 	}
 
-	/* Imagem de capa do cartão */
 	.capa {
 		display: block;
 		width: 100%;
@@ -693,7 +711,6 @@
 		border-color: var(--selo-feito-text);
 	}
 
-	/* ---------- Rodapé do cartão ---------- */
 	.cartao-rodape {
 		display: flex;
 		align-items: center;
@@ -765,7 +782,6 @@
 		color: #fff;
 	}
 
-	/* ---------- Rodapé ---------- */
 	.voltar {
 		display: inline-block;
 		margin-top: 1.5rem;
@@ -777,7 +793,6 @@
 		text-decoration: underline;
 	}
 
-	/* ---------- Celular ---------- */
 	@media (max-width: 720px) {
 		.quadro {
 			grid-template-columns: 1fr;
@@ -800,7 +815,6 @@
 		}
 	}
 
-	/* telas de toque não têm hover: mantém as mini ações visíveis */
 	@media (hover: none) {
 		.mini-acoes {
 			opacity: 1;

@@ -20,7 +20,6 @@
 	}
 </script>
 
-<!-- <nav style:background={s}></nav> -->
 <nav>
 	<div class="nav-left">
 		<a href="/"><img src={favicon} alt="Logo" class="logo" /></a>
